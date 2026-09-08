@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="My Rota">
+<link rel="manifest" href="manifest.json">
+<title>My Rota</title>
+<style>
+:root{--bg:#f3f4f6;--card:#fff;--ink:#111827;--muted:#6b7280;--line:#e5e7eb;--work:#111827;--extra:#2563eb;--danger:#b91c1c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:#111827;color:#fff;padding:20px 16px 18px;position:sticky;top:0;z-index:4}
+header h1{margin:0;font-size:26px}header p{margin:4px 0 0;color:#cbd5e1;font-size:13px}
+main{max-width:720px;margin:auto;padding:14px}
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+button{border:0;border-radius:11px;padding:10px 13px;font-weight:700;font-size:14px;background:#e5e7eb;color:#111827}
+button.primary{background:#111827;color:white}.blue{background:#2563eb;color:white}.danger{background:#fee2e2;color:var(--danger)}
+.month{flex:1;text-align:center;font-weight:800;font-size:18px}
+.card{background:var(--card);border-radius:17px;padding:12px;margin-bottom:12px;box-shadow:0 2px 12px #0000000b}
+.weekdays,.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.weekdays div{text-align:center;color:var(--muted);font-size:10px;font-weight:800;padding:4px 0}
+.day{min-height:78px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:6px;cursor:pointer}
+.day.other{opacity:.32}.day.today{outline:2px solid #f59e0b;outline-offset:-2px}
+.num{font-size:12px;font-weight:800}.badge{display:block;text-align:center;border-radius:7px;padding:4px 2px;margin-top:6px;font-size:9px;font-weight:800;white-space:nowrap;overflow:hidden}
+.work{background:#111827;color:#fff}.extra{background:#2563eb;color:#fff}.off{background:#f3f4f6;color:#6b7280}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.stat{text-align:center;background:#f8fafc;border-radius:12px;padding:10px}.stat b{font-size:21px;display:block}.stat span{font-size:10px;color:var(--muted)}
+.info{font-size:12px;color:var(--muted);line-height:1.55}.info b{color:var(--ink)}
+.modal{display:none;position:fixed;inset:0;background:#0008;z-index:10;align-items:flex-end}.modal.show{display:flex}.sheet{width:100%;max-width:720px;margin:auto 0 0;background:#fff;border-radius:22px 22px 0 0;padding:20px}
+.sheet h2{margin:0 0 8px;font-size:21px}.sheet .date-label{font-size:13px;color:var(--muted);margin-bottom:12px}
+label{display:block;font-size:12px;font-weight:750;color:var(--muted);margin:10px 0 5px}
+input{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:16px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.actions{display:flex;gap:8px;margin-top:14px}.actions button{flex:1}
+.install{display:none;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:12px;padding:10px;font-size:12px;margin-bottom:12px}
+@media(min-width:650px){.modal{align-items:center}.sheet{border-radius:18px;margin:auto}}
+</style>
+</head>
+<body>
+<header><h1>My Rota</h1><p>2-week repeating rota · Week 2 started Monday 7 September 2026</p></header>
+<main>
+<div id="install" class="install">To install: use your browser menu and choose <b>Add to Home Screen</b> / <b>Install app</b>.</div>
+<div class="toolbar"><button onclick="month(-1)">‹</button><div class="month" id="title"></div><button onclick="month(1)">›</button></div>
+<div class="toolbar"><button class="primary" onclick="today()">Today</button><button class="blue" onclick="openShift()">＋ Extra shift</button></div>
+<div class="card">
+<div class="weekdays"><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div><div>SUN</div></div>
+<div class="grid" id="grid"></div>
+</div>
+<div class="card"><div class="stats">
+<div class="stat"><b id="normal">0</b><span>Normal</span></div>
+<div class="stat"><b id="extras">0</b><span>Extra</span></div>
+<div class="stat"><b id="total">0</b><span>Total</span></div>
+</div></div>
+<div class="card"><div class="info"><b>Permanent rota</b><br>Week 1: Monday · Saturday · Sunday<br>Week 2: Monday · Wednesday · Friday<br><br><b>Extra shifts</b><br>Tap any date to add, edit or remove an extra shift. Your extra shifts are stored on this device.</div></div>
+</main>
+
+<div class="modal" id="modal"><div class="sheet">
+<h2 id="modalHead">Extra shift</h2><div class="date-label" id="modalDate"></div>
+<label>Date</label><input id="date" type="date">
+<div class="row"><div><label>Start time</label><input id="start" type="time" value="07:00"></div><div><label>End time</label><input id="end" type="time" value="19:00"></div></div>
+<label>Note</label><input id="note" placeholder="e.g. picked up extra shift">
+<div class="actions"><button onclick="closeModal()">Cancel</button><button class="blue" onclick="save()">Save</button></div>
+<div class="actions"><button class="danger" id="del" onclick="removeShift()">Delete extra shift</button></div>
+</div></div>
+
+<script>
+const ANCHOR="2026-09-07"; // Week 2
+const W2=new Set([0,2,4]), W1=new Set([0,5,6]);
+let view=new Date(); let extras=JSON.parse(localStorage.getItem("myRotaExtras")||"{}"); let selected=null;
+
+function iso(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate()).toISOString().slice(0,10)}
+function dateFrom(s){let [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)}
+function diff(a,b){return Math.round((dateFrom(a)-dateFrom(b))/86400000)}
+function permanent(d){
+ let x=diff(iso(d),ANCHOR); if(x<0)return false;
+ let week=Math.floor(x/7)%2, wd=(d.getDay()+6)%7;
+ return (week===0?W2:W1).has(wd);
+}
+function render(){
+ let y=view.getFullYear(),m=view.getMonth(),first=new Date(y,m,1),start=(first.getDay()+6)%7,days=new Date(y,m+1,0).getDate();
+ document.getElementById("title").textContent=view.toLocaleDateString("en-GB",{month:"long",year:"numeric"});
+ let g=document.getElementById("grid");g.innerHTML="";let n=0,e=0;
+ for(let i=0;i<42;i++){
+  let day=i-start+1,d=new Date(y,m,day),other=day<1||day>days,key=iso(d),p=permanent(d),x=extras[key];
+  if(p)n++;if(x)e++;
+  let c=document.createElement("div");c.className="day"+(other?" other":"")+(key===iso(new Date())?" today":"");
+  c.innerHTML='<div class="num">'+d.getDate()+'</div>'+ (p?'<span class="badge work">WORK</span>':'')+(x?'<span class="badge extra">EXTRA '+(x.start||'')+'</span>':'');
+  if(!other)c.onclick=()=>openShift(key);g.appendChild(c);
+ }
+ document.getElementById("normal").textContent=n;document.getElementById("extras").textContent=e;document.getElementById("total").textContent=n+e;
+}
+function month(n){view=new Date(view.getFullYear(),view.getMonth()+n,1);render()}
+function today(){let d=new Date();view=new Date(d.getFullYear(),d.getMonth(),1);render()}
+function openShift(key=iso(new Date())){
+ selected=key;let x=extras[key];document.getElementById("date").value=key;document.getElementById("start").value=x?.start||"07:00";document.getElementById("end").value=x?.end||"19:00";document.getElementById("note").value=x?.note||"";document.getElementById("modalDate").textContent=dateFrom(key).toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});document.getElementById("del").style.display=x?"block":"none";document.getElementById("modal").classList.add("show")
+}
+function closeModal(){document.getElementById("modal").classList.remove("show")}
+function save(){let k=document.getElementById("date").value;if(!k)return;extras[k]={start:document.getElementById("start").value,end:document.getElementById("end").value,note:document.getElementById("note").value};localStorage.setItem("myRotaExtras",JSON.stringify(extras));closeModal();render()}
+function removeShift(){if(selected){delete extras[selected];localStorage.setItem("myRotaExtras",JSON.stringify(extras));closeModal();render()}}
+if(location.protocol==="https:"&&"serviceWorker"in navigator)navigator.serviceWorker.register("sw.js");
+document.getElementById("install").style.display="block";render();
+</script>
+</body>
+</html>
