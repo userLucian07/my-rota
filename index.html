@@ -42,7 +42,7 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
 .day-toggle{flex:1;text-align:center;padding:8px 0;background:#f3f4f6;border-radius:8px;font-size:12px;font-weight:bold;cursor:pointer;user-select:none;border:1px solid transparent}
 .day-toggle.active{background:#111827;color:#fff}
 .auth-container{max-width:400px;margin:40px auto;background:#fff;padding:20px;border-radius:17px;box-shadow:0 2px 12px #0000000b;text-align:center}
-#errorMsg{color:var(--danger);font-size:12px;margin-bottom:10px;display:none}
+#errorMsg{font-size:12px;margin-bottom:10px;display:none}
 @media(min-width:650px){.modal{align-items:center}.sheet{border-radius:18px;margin:auto}}
 </style>
 </head>
@@ -59,7 +59,6 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
         <button class="primary" onclick="login()">Log In</button>
         <button class="blue" onclick="register()">Register</button>
     </div>
-    <!-- New Forgot Password Link -->
     <a href="#" onclick="resetPassword()" style="display:block; margin-top:15px; font-size:12px; color:var(--extra); text-decoration:none; font-weight:bold;">Forgot Password?</a>
 </div>
 
@@ -193,7 +192,7 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -215,10 +214,27 @@ const defaultSettings = { rate: 13, alAllowance: 210, alMonth: 0, anchorDate: "2
 let settings = { ...defaultSettings };
 let currentLeaveYear = new Date().getFullYear();
 
+function showError(msg, isSuccess = false) { 
+    let el = document.getElementById("errorMsg"); 
+    el.textContent = msg; 
+    el.style.color = isSuccess ? "#10b981" : "var(--danger)";
+    el.style.display = "block"; 
+}
+
 window.login = () => signInWithEmailAndPassword(auth, document.getElementById("email").value, document.getElementById("password").value).catch(err => showError(err.message));
 window.register = () => createUserWithEmailAndPassword(auth, document.getElementById("email").value, document.getElementById("password").value).catch(err => showError(err.message));
 window.logout = () => signOut(auth);
-function showError(msg) { let el = document.getElementById("errorMsg"); el.textContent = msg; el.style.display = "block"; }
+
+window.resetPassword = () => {
+    let e = document.getElementById("email").value;
+    if (!e) {
+        showError("Please enter your email address first, then click Forgot Password.");
+        return;
+    }
+    sendPasswordResetEmail(auth, e)
+        .then(() => showError("Password reset email sent! Check your inbox.", true))
+        .catch(err => showError(err.message));
+};
 
 onAuthStateChanged(auth, async (user) => {
     if (user) { currentUser = user; document.getElementById("authScreen").style.display = "none"; document.getElementById("mainApp").style.display = "block"; await loadCloudData(); render(); } 
@@ -364,7 +380,7 @@ window.renderLeaveTracker = () => {
     if(end < now && remaining > 0) {
         document.getElementById("forfeitedBox").style.display = "grid";
         document.getElementById("alForfeited").textContent = remaining + "h";
-        document.getElementById("alRemaining").textContent = "0h"; // Forfeited, so technically 0 remaining to use
+        document.getElementById("alRemaining").textContent = "0h";
     } else {
         document.getElementById("forfeitedBox").style.display = "none";
     }
