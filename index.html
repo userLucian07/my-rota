@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.json">
 <title>My Rota</title>
 <style>
-:root{--bg:#f3f4f6;--card:#fff;--ink:#111827;--muted:#6b7280;--line:#e5e7eb;--work:#111827;--extra:#2563eb;--danger:#b91c1c}
+:root{--bg:#f3f4f6;--card:#fff;--ink:#111827;--muted:#6b7280;--line:#e5e7eb;--work:#111827;--extra:#2563eb;--al:#10b981;--sick:#f59e0b;--danger:#b91c1c}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 header{background:#111827;color:#fff;padding:20px 16px 18px;position:sticky;top:0;z-index:4;display:flex;justify-content:space-between;align-items:center;}
 .header-text h1{margin:0;font-size:26px}.header-text p{margin:4px 0 0;color:#cbd5e1;font-size:13px}
@@ -28,7 +28,7 @@ button.primary{background:#111827;color:white}.blue{background:#2563eb;color:whi
 .day.other{opacity:.32}.day.today{outline:2px solid #f59e0b;outline-offset:-2px}
 .num{font-size:12px;font-weight:800;margin-bottom:auto}
 .badge{display:block;text-align:center;border-radius:7px;padding:4px 2px;margin-top:4px;font-size:9px;font-weight:800;white-space:nowrap;overflow:hidden}
-.work{background:#111827;color:#fff}.extra{background:#2563eb;color:#fff}.off{background:#f3f4f6;color:#6b7280}
+.work{background:#111827;color:#fff}.extra{background:var(--extra);color:#fff}.al{background:var(--al);color:#fff}.sick{background:var(--sick);color:#fff}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.stat{text-align:center;background:#f8fafc;border-radius:12px;padding:10px}.stat b{font-size:19px;display:block}.stat span{font-size:10px;color:var(--muted)}
 .weekly-breakdown{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:13px}
 .weekly-breakdown div{display:flex;justify-content:space-between;padding:4px 0;color:var(--muted)}
@@ -69,7 +69,7 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
             <p id="headCycle">2-week repeating rota</p>
         </div>
         <div class="header-actions">
-            <!-- New Pay Summary Button -->
+            <button class="icon-btn" onclick="openLeave()" title="Leave Tracker">🌴</button>
             <button class="icon-btn" onclick="openPay()" title="Pay Summary">£</button>
             <button class="icon-btn" onclick="openSettings()" title="Settings">⚙</button>
             <button class="icon-btn" onclick="logout()" title="Log Out">⎋</button>
@@ -77,7 +77,7 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
     </header>
     <main style="display:block;">
     <div class="toolbar"><button onclick="month(-1)">‹</button><div class="month" id="title"></div><button onclick="month(1)">›</button></div>
-    <div class="toolbar"><button class="primary" onclick="today()">Today</button><button class="blue" onclick="openShift()">＋ Add OT</button></div>
+    <div class="toolbar"><button class="primary" onclick="today()">Today</button><button class="blue" onclick="openShift()">＋ Add Shift Note</button></div>
 
     <div class="card">
     <div class="weekdays"><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div><div>SUN</div></div>
@@ -95,7 +95,26 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
     </main>
 </div>
 
-<!-- Pay Summary Modal (Hidden by Default) -->
+<!-- Leave Tracker Modal -->
+<div class="modal" id="leaveModal"><div class="sheet">
+<h2>Annual Leave Tracker</h2>
+<div class="date-label" id="leaveYearLabel"></div>
+<div class="stats" style="margin-bottom: 15px;">
+<div class="stat"><b id="alAllowance">0h</b><span>Allowance</span></div>
+<div class="stat"><b id="alTaken">0h</b><span>Taken</span></div>
+<div class="stat"><b id="alRemaining">0h</b><span>Remaining</span></div>
+</div>
+<div class="stats" style="margin-bottom: 15px; display: none;" id="forfeitedBox">
+<div class="stat" style="background:#fee2e2; color:#b91c1c;"><b id="alForfeited">0h</b><span>Forfeited</span></div>
+</div>
+<div class="actions">
+    <button onclick="changeLeaveYear(-1)">‹ Prev Year</button>
+    <button onclick="changeLeaveYear(1)">Next Year ›</button>
+</div>
+<div class="actions" style="margin-top: 8px;"><button class="blue" onclick="closeModal('leaveModal')">Close</button></div>
+</div></div>
+
+<!-- Pay Summary Modal -->
 <div class="modal" id="payModal"><div class="sheet">
 <h2>Pay Summary</h2>
 <div class="date-label" id="payPeriodLabel"></div>
@@ -104,17 +123,39 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
 <div class="stat"><b id="earnOT">£0</b><span>OT Pay</span></div>
 <div class="stat"><b id="earnTotal">£0</b><span>Total Pay</span></div>
 </div>
+<div class="stats" style="margin-bottom: 15px;">
+<div class="stat"><b id="earnAL">£0</b><span>AL Pay</span></div>
+<div class="stat"><b id="earnSick">£0</b><span>Sick Pay</span></div>
+<div class="stat"><b id="earnGrand">£0</b><span>GRAND TOTAL</span></div>
+</div>
 <div class="actions"><button onclick="closeModal('payModal')">Close</button></div>
 </div></div>
 
-<!-- Shift Modal -->
+<!-- Shift Entry Modal -->
 <div class="modal" id="modal"><div class="sheet">
-<h2 id="modalHead">Overtime Shift</h2><div class="date-label" id="modalDate"></div>
-<label>Date</label><input id="date" type="date">
-<div class="row"><div><label>Start time</label><input id="start" type="time" value="07:00"></div><div><label>End time</label><input id="end" type="time" value="19:00"></div></div>
-<label>Note</label><input id="note" placeholder="e.g. picked up extra shift">
+<h2 id="modalHead">Shift Details</h2><div class="date-label" id="modalDate"></div>
+<input id="date" type="hidden">
+
+<label>Type of Entry</label>
+<select id="shiftType" onchange="toggleShiftFields()">
+    <option value="ot">Overtime (OT)</option>
+    <option value="al">Annual Leave (AL)</option>
+    <option value="sick">Sick Day</option>
+</select>
+
+<div id="timeFields" class="row">
+    <div><label>Start time</label><input id="start" type="time" value="07:00"></div>
+    <div><label>End time</label><input id="end" type="time" value="19:00"></div>
+</div>
+
+<div id="customFields" class="row" style="display:none;">
+    <div><label>Hours Claimed</label><input id="customHrs" type="number" step="0.5" value="12.5"></div>
+    <div><label>Hourly Rate (£)</label><input id="customRate" type="number" step="0.1"></div>
+</div>
+
+<label>Note</label><input id="note" placeholder="Optional details">
 <div class="actions"><button onclick="closeModal('modal')">Cancel</button><button class="blue" onclick="saveShift()">Save</button></div>
-<div class="actions"><button class="danger" id="del" onclick="removeShift()">Delete OT</button></div>
+<div class="actions"><button class="danger" id="del" onclick="removeShift()">Delete Entry</button></div>
 </div></div>
 
 <!-- Settings Modal -->
@@ -123,29 +164,31 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
 <label>Base Hourly Rate (£)</label>
 <input type="number" id="setRate" step="0.1" value="13">
 
+<div class="row">
+    <div><label>AL Allowance (Hrs)</label><input type="number" id="setAlAllowance" step="0.5" value="210"></div>
+    <div><label>Holiday Year Starts</label>
+    <select id="setAlMonth">
+        <option value="0">January</option><option value="1">February</option><option value="2">March</option><option value="3">April</option>
+        <option value="4">May</option><option value="5">June</option><option value="6">July</option><option value="7">August</option>
+        <option value="8">September</option><option value="9">October</option><option value="10">November</option><option value="11">December</option>
+    </select></div>
+</div>
+
 <label>Week 1 Working Days</label>
 <div class="day-toggles" id="togglesW1">
     <div class="day-toggle" onclick="toggleDay(this, 0)">M</div><div class="day-toggle" onclick="toggleDay(this, 1)">T</div><div class="day-toggle" onclick="toggleDay(this, 2)">W</div><div class="day-toggle" onclick="toggleDay(this, 3)">T</div><div class="day-toggle" onclick="toggleDay(this, 4)">F</div><div class="day-toggle" onclick="toggleDay(this, 5)">S</div><div class="day-toggle" onclick="toggleDay(this, 6)">S</div>
 </div>
-
 <label>Week 2 Working Days</label>
 <div class="day-toggles" id="togglesW2">
     <div class="day-toggle" onclick="toggleDay(this, 0)">M</div><div class="day-toggle" onclick="toggleDay(this, 1)">T</div><div class="day-toggle" onclick="toggleDay(this, 2)">W</div><div class="day-toggle" onclick="toggleDay(this, 3)">T</div><div class="day-toggle" onclick="toggleDay(this, 4)">F</div><div class="day-toggle" onclick="toggleDay(this, 5)">S</div><div class="day-toggle" onclick="toggleDay(this, 6)">S</div>
 </div>
-
 <label>Cycle Anchor Date (Pick any Monday)</label>
 <input type="date" id="setAnchorDate">
-
 <label>Was that Monday in Week 1 or Week 2?</label>
-<select id="setAnchorWeek">
-    <option value="1">Week 1</option>
-    <option value="2">Week 2</option>
-</select>
-
+<select id="setAnchorWeek"><option value="1">Week 1</option><option value="2">Week 2</option></select>
 <div class="actions"><button onclick="closeModal('settingsModal')">Cancel</button><button class="blue" onclick="saveSettings()">Save Settings</button></div>
 </div></div>
 
-<!-- Firebase SDKs & App Logic -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
@@ -165,62 +208,27 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-let currentUser = null;
-let view = new Date();
-let extras = {};
-const defaultSettings = { rate: 13, anchorDate: "2026-09-07", anchorWeek: 2, w1: [0,5,6], w2: [0,2,4] };
+let currentUser = null, view = new Date(), extras = {}, selected = null;
+const defaultSettings = { rate: 13, alAllowance: 210, alMonth: 0, anchorDate: "2026-09-07", anchorWeek: 2, w1: [0,5,6], w2: [0,2,4] };
 let settings = { ...defaultSettings };
-let selected = null;
+let currentLeaveYear = new Date().getFullYear();
 
-window.login = () => {
-    let e = document.getElementById("email").value, p = document.getElementById("password").value;
-    signInWithEmailAndPassword(auth, e, p).catch(err => showError(err.message));
-};
-window.register = () => {
-    let e = document.getElementById("email").value, p = document.getElementById("password").value;
-    createUserWithEmailAndPassword(auth, e, p).catch(err => showError(err.message));
-};
+window.login = () => signInWithEmailAndPassword(auth, document.getElementById("email").value, document.getElementById("password").value).catch(err => showError(err.message));
+window.register = () => createUserWithEmailAndPassword(auth, document.getElementById("email").value, document.getElementById("password").value).catch(err => showError(err.message));
 window.logout = () => signOut(auth);
-
-function showError(msg) {
-    let el = document.getElementById("errorMsg");
-    el.textContent = msg;
-    el.style.display = "block";
-}
+function showError(msg) { let el = document.getElementById("errorMsg"); el.textContent = msg; el.style.display = "block"; }
 
 onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        currentUser = user;
-        document.getElementById("authScreen").style.display = "none";
-        document.getElementById("mainApp").style.display = "block";
-        await loadCloudData();
-        render();
-    } else {
-        currentUser = null;
-        document.getElementById("authScreen").style.display = "block";
-        document.getElementById("mainApp").style.display = "none";
-    }
+    if (user) { currentUser = user; document.getElementById("authScreen").style.display = "none"; document.getElementById("mainApp").style.display = "block"; await loadCloudData(); render(); } 
+    else { currentUser = null; document.getElementById("authScreen").style.display = "block"; document.getElementById("mainApp").style.display = "none"; }
 });
 
 async function loadCloudData() {
     if(!currentUser) return;
-    const docRef = doc(db, "users", currentUser.uid);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-        let data = docSnap.data();
-        extras = data.extras || {};
-        settings = data.settings || defaultSettings;
-    } else {
-        extras = {};
-        settings = { ...defaultSettings };
-    }
+    const docSnap = await getDoc(doc(db, "users", currentUser.uid));
+    if (docSnap.exists()) { let data = docSnap.data(); extras = data.extras || {}; settings = data.settings || defaultSettings; }
 }
-
-async function saveToCloud() {
-    if(currentUser) {
-        await setDoc(doc(db, "users", currentUser.uid), { settings, extras });
-    }
-}
+async function saveToCloud() { if(currentUser) await setDoc(doc(db, "users", currentUser.uid), { settings, extras }); }
 
 function iso(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate(), 12).toISOString().slice(0,10)}
 function dateFrom(s){let [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d,12)}
@@ -228,62 +236,61 @@ function diff(a,b){return Math.round((dateFrom(a)-dateFrom(b))/86400000)}
 
 function getHours(start, end) {
   if(!start || !end) return 0;
-  let [sh, sm] = start.split(':').map(Number);
-  let [eh, em] = end.split(':').map(Number);
+  let [sh, sm] = start.split(':').map(Number); let [eh, em] = end.split(':').map(Number);
   let hrs = (eh + em/60) - (sh + sm/60);
   if(hrs < 0) hrs += 24; 
   return hrs;
 }
 
 function permanent(d){
- let x = diff(iso(d), settings.anchorDate);
- let weekDiff = Math.floor(x/7);
- let isAnchorW1 = parseInt(settings.anchorWeek) === 1;
- let cycle = (isAnchorW1 ? weekDiff : weekDiff + 1) % 2;
+ let weekDiff = Math.floor(diff(iso(d), settings.anchorDate)/7);
+ let cycle = (parseInt(settings.anchorWeek) === 1 ? weekDiff : weekDiff + 1) % 2;
  if(cycle < 0) cycle += 2;
- let wd = (d.getDay()+6)%7;
- return (cycle === 0 ? new Set(settings.w1) : new Set(settings.w2)).has(wd);
+ return (cycle === 0 ? new Set(settings.w1) : new Set(settings.w2)).has((d.getDay()+6)%7);
 }
 
 function render(){
- let cycleWeek = diff(iso(new Date()), settings.anchorDate);
- cycleWeek = Math.floor(cycleWeek/7);
- let isAnchorW1 = parseInt(settings.anchorWeek) === 1;
- let cycle = (isAnchorW1 ? cycleWeek : cycleWeek + 1) % 2;
- if(cycle < 0) cycle += 2;
+ let cycleWeek = Math.floor(diff(iso(new Date()), settings.anchorDate)/7);
+ let cycle = (parseInt(settings.anchorWeek) === 1 ? cycleWeek : cycleWeek + 1) % 2; if(cycle < 0) cycle += 2;
  document.getElementById("headCycle").textContent = `Current Cycle: Week ${cycle === 0 ? 1 : 2}`;
  
- let y=view.getFullYear(), m=view.getMonth();
- let pStart = new Date(y, m-1, 26), pEnd = new Date(y, m, 25);
- let start = (pStart.getDay()+6)%7; 
- let days = Math.round((pEnd - pStart)/86400000) + 1;
-
+ let y=view.getFullYear(), m=view.getMonth(), pStart = new Date(y, m-1, 26), pEnd = new Date(y, m, 25);
+ let start = (pStart.getDay()+6)%7, days = Math.round((pEnd - pStart)/86400000) + 1;
  let periodText = "Period Ending 25 " + pEnd.toLocaleDateString("en-GB",{month:"short",year:"numeric"});
- document.getElementById("title").textContent = periodText;
- document.getElementById("payPeriodLabel").textContent = periodText;
+ document.getElementById("title").textContent = periodText; document.getElementById("payPeriodLabel").textContent = periodText;
 
  let g=document.getElementById("grid");g.innerHTML="";
- 
- let normalHrs=0, otHrs=0, currentWeekHrs=0, weekCount=1;
- let weeklyHtml = "<b>Weekly Breakdown (Hours):</b>";
+ let normalHrs=0, otHrs=0, alHrs=0, sickHrs=0, currentWeekHrs=0, weekCount=1;
+ let payNormal=0, payOT=0, payAL=0, paySick=0;
+ let weeklyHtml = "<b>Weekly Breakdown (Total Worked Hrs):</b>";
 
  for(let i=0;i<42;i++){
-  let dayOffset = i - start;
-  let d = new Date(y, m-1, 26 + dayOffset);
-  let other = dayOffset < 0 || dayOffset >= days;
-  let key = iso(d), p = permanent(d), x = extras[key];
+  let dayOffset = i - start, d = new Date(y, m-1, 26 + dayOffset), other = dayOffset < 0 || dayOffset >= days;
+  let key = iso(d), p = permanent(d), x = extras[key], dayHrs = 0;
   
-  let dayHrs = 0;
-  if(p && !other) { normalHrs += 12.5; dayHrs += 12.5; }
-  if(x && !other) { let h = getHours(x.start, x.end); otHrs += h; dayHrs += h; }
-  if(!other) currentWeekHrs += dayHrs;
+  let isWorkDay = p && !other;
+  let hasSpecial = false;
+
+  if (x && !other) {
+      if (x.type === 'al') { hasSpecial = true; alHrs += parseFloat(x.hrs); payAL += parseFloat(x.hrs) * parseFloat(x.rate); }
+      else if (x.type === 'sick') { hasSpecial = true; sickHrs += parseFloat(x.hrs); paySick += parseFloat(x.hrs) * parseFloat(x.rate); }
+      else { let h = getHours(x.start, x.end); otHrs += h; dayHrs += h; payOT += h * (parseFloat(settings.rate) + 1); }
+  }
+  
+  if (isWorkDay && !hasSpecial) { normalHrs += 12.5; dayHrs += 12.5; payNormal += 12.5 * parseFloat(settings.rate); }
+  if (!other) currentWeekHrs += dayHrs;
 
   let c=document.createElement("div");c.className="day"+(other?" other":"")+(key===iso(new Date())?" today":"");
-  c.innerHTML='<div class="num">'+d.getDate()+'</div>'+ (p?'<span class="badge work">WORK</span>':'')+(x?'<span class="badge extra">OT '+(x.start||'')+'</span>':'');
+  let label = p && !hasSpecial ? '<span class="badge work">WORK</span>' : '';
+  if (x && x.type === 'al') label += '<span class="badge al">LEAVE</span>';
+  if (x && x.type === 'sick') label += '<span class="badge sick">SICK</span>';
+  if (x && (!x.type || x.type === 'ot')) label += `<span class="badge extra">OT ${x.start}</span>`;
+  
+  c.innerHTML=`<div class="num">${d.getDate()}</div>${label}`;
   if(!other)c.onclick=()=>openShift(key);g.appendChild(c);
 
   if((i+1)%7 === 0) {
-      if(currentWeekHrs > 0) weeklyHtml += `<div>Week ${weekCount} (ending ${d.getDate()} ${d.toLocaleDateString('en-GB',{month:'short'})}) <b>${currentWeekHrs.toFixed(1)} hrs</b></div>`;
+      if(currentWeekHrs > 0) weeklyHtml += `<div>Week ${weekCount} (ending ${d.getDate()}) <b>${currentWeekHrs.toFixed(1)} hrs</b></div>`;
       currentWeekHrs = 0; weekCount++;
   }
  }
@@ -291,59 +298,108 @@ function render(){
  document.getElementById("normal").textContent=normalHrs.toFixed(1);
  document.getElementById("extras").textContent=otHrs.toFixed(1);
  document.getElementById("total").textContent=(normalHrs+otHrs).toFixed(1);
- 
- let payNormal = normalHrs * parseFloat(settings.rate);
- let payOT = otHrs * (parseFloat(settings.rate) + 1);
  document.getElementById("earnNormal").textContent="£" + payNormal.toFixed(2);
  document.getElementById("earnOT").textContent="£" + payOT.toFixed(2);
  document.getElementById("earnTotal").textContent="£" + (payNormal + payOT).toFixed(2);
+ document.getElementById("earnAL").textContent="£" + payAL.toFixed(2);
+ document.getElementById("earnSick").textContent="£" + paySick.toFixed(2);
+ document.getElementById("earnGrand").textContent="£" + (payNormal + payOT + payAL + paySick).toFixed(2);
  document.getElementById("weekly").innerHTML=weeklyHtml;
 }
 
 window.month = n => {view=new Date(view.getFullYear(),view.getMonth()+n,1); render()};
 window.today = () => {let d=new Date(); view=new Date(d.getFullYear(),d.getMonth(),1); render()};
 
+window.toggleShiftFields = () => {
+    let t = document.getElementById("shiftType").value;
+    document.getElementById("timeFields").style.display = t === 'ot' ? "grid" : "none";
+    document.getElementById("customFields").style.display = t !== 'ot' ? "grid" : "none";
+};
+
 window.openShift = (key=iso(new Date())) => {
- selected=key; let x=extras[key];
- document.getElementById("date").value=key; document.getElementById("start").value=x?.start||"07:00"; document.getElementById("end").value=x?.end||"19:00"; document.getElementById("note").value=x?.note||"";
+ selected=key; let x=extras[key] || {type: 'ot', start: "07:00", end: "19:00"};
+ document.getElementById("date").value=key;
+ document.getElementById("shiftType").value = x.type || 'ot';
+ document.getElementById("start").value = x.start || "07:00";
+ document.getElementById("end").value = x.end || "19:00";
+ document.getElementById("customHrs").value = x.hrs || 12.5;
+ document.getElementById("customRate").value = x.rate || settings.rate;
+ document.getElementById("note").value = x.note || "";
+ window.toggleShiftFields();
  document.getElementById("modalDate").textContent=dateFrom(key).toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
- document.getElementById("del").style.display=x?"block":"none";
+ document.getElementById("del").style.display=extras[key]?"block":"none";
  document.getElementById("modal").classList.add("show");
+};
+
+/* LEAVE TRACKER LOGIC */
+window.openLeave = () => { currentLeaveYear = new Date().getFullYear(); renderLeaveTracker(); document.getElementById("leaveModal").classList.add("show"); };
+window.changeLeaveYear = (n) => { currentLeaveYear += n; renderLeaveTracker(); };
+window.renderLeaveTracker = () => {
+    let sm = parseInt(settings.alMonth || 0);
+    let start = new Date(currentLeaveYear, sm, 1);
+    let end = new Date(currentLeaveYear + 1, sm, 0); 
+    
+    document.getElementById("leaveYearLabel").textContent = `Holiday Year: ${start.toLocaleDateString('en-GB',{month:'short', year:'numeric'})} - ${end.toLocaleDateString('en-GB',{month:'short', year:'numeric'})}`;
+
+    let taken = 0;
+    for(let key in extras) {
+        let x = extras[key];
+        if(x.type === 'al') {
+            let d = dateFrom(key);
+            if(d >= start && d <= end) { taken += parseFloat(x.hrs || 0); }
+        }
+    }
+    
+    let allowance = parseFloat(settings.alAllowance || 210);
+    let remaining = allowance - taken;
+    if(remaining < 0) remaining = 0;
+
+    document.getElementById("alAllowance").textContent = allowance + "h";
+    document.getElementById("alTaken").textContent = taken + "h";
+    document.getElementById("alRemaining").textContent = remaining + "h";
+
+    let now = new Date();
+    if(end < now && remaining > 0) {
+        document.getElementById("forfeitedBox").style.display = "grid";
+        document.getElementById("alForfeited").textContent = remaining + "h";
+        document.getElementById("alRemaining").textContent = "0h"; // Forfeited, so technically 0 remaining to use
+    } else {
+        document.getElementById("forfeitedBox").style.display = "none";
+    }
 };
 
 window.openPay = () => document.getElementById("payModal").classList.add("show");
 window.closeModal = id => document.getElementById(id).classList.remove("show");
 
 window.saveShift = async () => {
- let k=document.getElementById("date").value; if(!k) return;
- extras[k]={start:document.getElementById("start").value,end:document.getElementById("end").value,note:document.getElementById("note").value};
+ let k=document.getElementById("date").value, t=document.getElementById("shiftType").value; if(!k) return;
+ extras[k]={ type: t, start: document.getElementById("start").value, end: document.getElementById("end").value, hrs: document.getElementById("customHrs").value, rate: document.getElementById("customRate").value, note: document.getElementById("note").value };
  window.closeModal('modal'); render(); saveToCloud();
 };
 
-window.removeShift = async () => {
- if(selected){delete extras[selected]; window.closeModal('modal'); render(); saveToCloud();}
-};
-
+window.removeShift = async () => { if(selected){delete extras[selected]; window.closeModal('modal'); render(); saveToCloud();} };
 window.toggleDay = (el) => el.classList.toggle("active");
 
 window.openSettings = () => {
- document.getElementById("setRate").value = settings.rate; document.getElementById("setAnchorDate").value = settings.anchorDate; document.getElementById("setAnchorWeek").value = settings.anchorWeek;
- let w1Toggles = document.getElementById("togglesW1").children, w2Toggles = document.getElementById("togglesW2").children;
- for(let i=0; i<7; i++) {
-    w1Toggles[i].classList.toggle("active", settings.w1.includes(i));
-    w2Toggles[i].classList.toggle("active", settings.w2.includes(i));
- }
+ document.getElementById("setRate").value = settings.rate; 
+ document.getElementById("setAlAllowance").value = settings.alAllowance || 210;
+ document.getElementById("setAlMonth").value = settings.alMonth || 0;
+ document.getElementById("setAnchorDate").value = settings.anchorDate; 
+ document.getElementById("setAnchorWeek").value = settings.anchorWeek;
+ let w1 = document.getElementById("togglesW1").children, w2 = document.getElementById("togglesW2").children;
+ for(let i=0; i<7; i++) { w1[i].classList.toggle("active", settings.w1.includes(i)); w2[i].classList.toggle("active", settings.w2.includes(i)); }
  document.getElementById("settingsModal").classList.add("show");
 };
 
 window.saveSettings = async () => {
- settings.rate = document.getElementById("setRate").value; settings.anchorDate = document.getElementById("setAnchorDate").value; settings.anchorWeek = document.getElementById("setAnchorWeek").value;
+ settings.rate = document.getElementById("setRate").value; 
+ settings.alAllowance = document.getElementById("setAlAllowance").value;
+ settings.alMonth = document.getElementById("setAlMonth").value;
+ settings.anchorDate = document.getElementById("setAnchorDate").value; 
+ settings.anchorWeek = document.getElementById("setAnchorWeek").value;
  settings.w1 = []; settings.w2 = [];
- let w1Toggles = document.getElementById("togglesW1").children, w2Toggles = document.getElementById("togglesW2").children;
- for(let i=0; i<7; i++) {
-    if(w1Toggles[i].classList.contains("active")) settings.w1.push(i);
-    if(w2Toggles[i].classList.contains("active")) settings.w2.push(i);
- }
+ let w1 = document.getElementById("togglesW1").children, w2 = document.getElementById("togglesW2").children;
+ for(let i=0; i<7; i++) { if(w1[i].classList.contains("active")) settings.w1.push(i); if(w2[i].classList.contains("active")) settings.w2.push(i); }
  window.closeModal('settingsModal'); render(); saveToCloud();
 };
 
