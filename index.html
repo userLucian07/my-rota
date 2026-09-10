@@ -16,7 +16,7 @@ header{background:#111827;color:#fff;padding:20px 16px 18px;position:sticky;top:
 .header-text h1{margin:0;font-size:26px}.header-text p{margin:4px 0 0;color:#cbd5e1;font-size:13px}
 .header-actions{display:flex;gap:10px}
 .icon-btn{background:#334155;color:#fff;border:0;border-radius:50%;width:40px;height:40px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-main{max-width:720px;margin:auto;padding:14px;display:none} /* Hidden until logged in */
+main{max-width:720px;margin:auto;padding:14px;display:none} 
 .toolbar{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 button{border:0;border-radius:11px;padding:10px 13px;font-weight:700;font-size:14px;background:#e5e7eb;color:#111827;cursor:pointer}
 button.primary{background:#111827;color:white}.blue{background:#2563eb;color:white}.danger{background:#fee2e2;color:var(--danger)}
@@ -61,7 +61,7 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
     </div>
 </div>
 
-<!-- Main App (Hidden until auth) -->
+<!-- Main App -->
 <div id="mainApp" style="display:none;">
     <header>
         <div class="header-text">
@@ -69,8 +69,10 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
             <p id="headCycle">2-week repeating rota</p>
         </div>
         <div class="header-actions">
-            <button class="icon-btn" onclick="openSettings()">⚙</button>
-            <button class="icon-btn" onclick="logout()">⎋</button>
+            <!-- New Pay Summary Button -->
+            <button class="icon-btn" onclick="openPay()" title="Pay Summary">£</button>
+            <button class="icon-btn" onclick="openSettings()" title="Settings">⚙</button>
+            <button class="icon-btn" onclick="logout()" title="Log Out">⎋</button>
         </div>
     </header>
     <main style="display:block;">
@@ -88,15 +90,22 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
     <div class="stat"><b id="extras">0</b><span>OT Hrs</span></div>
     <div class="stat"><b id="total">0</b><span>Total Hrs</span></div>
     </div>
-    <div class="stats" style="margin-top: 7px;">
-    <div class="stat"><b id="earnNormal">£0</b><span>Normal Pay</span></div>
-    <div class="stat"><b id="earnOT">£0</b><span>OT Pay</span></div>
-    <div class="stat"><b id="earnTotal">£0</b><span>Total Pay</span></div>
-    </div>
     <div class="weekly-breakdown" id="weekly"></div>
     </div>
     </main>
 </div>
+
+<!-- Pay Summary Modal (Hidden by Default) -->
+<div class="modal" id="payModal"><div class="sheet">
+<h2>Pay Summary</h2>
+<div class="date-label" id="payPeriodLabel"></div>
+<div class="stats" style="margin-bottom: 15px;">
+<div class="stat"><b id="earnNormal">£0</b><span>Normal Pay</span></div>
+<div class="stat"><b id="earnOT">£0</b><span>OT Pay</span></div>
+<div class="stat"><b id="earnTotal">£0</b><span>Total Pay</span></div>
+</div>
+<div class="actions"><button onclick="closeModal('payModal')">Close</button></div>
+</div></div>
 
 <!-- Shift Modal -->
 <div class="modal" id="modal"><div class="sheet">
@@ -156,7 +165,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Global Variables
 let currentUser = null;
 let view = new Date();
 let extras = {};
@@ -164,7 +172,6 @@ const defaultSettings = { rate: 13, anchorDate: "2026-09-07", anchorWeek: 2, w1:
 let settings = { ...defaultSettings };
 let selected = null;
 
-// Auth Functions
 window.login = () => {
     let e = document.getElementById("email").value, p = document.getElementById("password").value;
     signInWithEmailAndPassword(auth, e, p).catch(err => showError(err.message));
@@ -215,7 +222,6 @@ async function saveToCloud() {
     }
 }
 
-// Logic & Render Functions
 function iso(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate(), 12).toISOString().slice(0,10)}
 function dateFrom(s){let [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d,12)}
 function diff(a,b){return Math.round((dateFrom(a)-dateFrom(b))/86400000)}
@@ -252,7 +258,10 @@ function render(){
  let start = (pStart.getDay()+6)%7; 
  let days = Math.round((pEnd - pStart)/86400000) + 1;
 
- document.getElementById("title").textContent="Period Ending 25 " + pEnd.toLocaleDateString("en-GB",{month:"short",year:"numeric"});
+ let periodText = "Period Ending 25 " + pEnd.toLocaleDateString("en-GB",{month:"short",year:"numeric"});
+ document.getElementById("title").textContent = periodText;
+ document.getElementById("payPeriodLabel").textContent = periodText;
+
  let g=document.getElementById("grid");g.innerHTML="";
  
  let normalHrs=0, otHrs=0, currentWeekHrs=0, weekCount=1;
@@ -302,6 +311,7 @@ window.openShift = (key=iso(new Date())) => {
  document.getElementById("modal").classList.add("show");
 };
 
+window.openPay = () => document.getElementById("payModal").classList.add("show");
 window.closeModal = id => document.getElementById(id).classList.remove("show");
 
 window.saveShift = async () => {
