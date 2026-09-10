@@ -12,9 +12,11 @@
 <style>
 :root{--bg:#f3f4f6;--card:#fff;--ink:#111827;--muted:#6b7280;--line:#e5e7eb;--work:#111827;--extra:#2563eb;--danger:#b91c1c}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-header{background:#111827;color:#fff;padding:20px 16px 18px;position:sticky;top:0;z-index:4}
-header h1{margin:0;font-size:26px}header p{margin:4px 0 0;color:#cbd5e1;font-size:13px}
-main{max-width:720px;margin:auto;padding:14px}
+header{background:#111827;color:#fff;padding:20px 16px 18px;position:sticky;top:0;z-index:4;display:flex;justify-content:space-between;align-items:center;}
+.header-text h1{margin:0;font-size:26px}.header-text p{margin:4px 0 0;color:#cbd5e1;font-size:13px}
+.header-actions{display:flex;gap:10px}
+.icon-btn{background:#334155;color:#fff;border:0;border-radius:50%;width:40px;height:40px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+main{max-width:720px;margin:auto;padding:14px;display:none} /* Hidden until logged in */
 .toolbar{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 button{border:0;border-radius:11px;padding:10px 13px;font-weight:700;font-size:14px;background:#e5e7eb;color:#111827;cursor:pointer}
 button.primary{background:#111827;color:white}.blue{background:#2563eb;color:white}.danger{background:#fee2e2;color:var(--danger)}
@@ -31,85 +33,191 @@ button.primary{background:#111827;color:white}.blue{background:#2563eb;color:whi
 .weekly-breakdown{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:13px}
 .weekly-breakdown div{display:flex;justify-content:space-between;padding:4px 0;color:var(--muted)}
 .weekly-breakdown b{color:var(--ink)}
-.info{font-size:12px;color:var(--muted);line-height:1.55}.info b{color:var(--ink)}
-.rate-setting{display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:bold}
-.rate-setting input{width:80px;padding:8px;font-size:14px;text-align:center;margin-left:10px}
-.modal{display:none;position:fixed;inset:0;background:#0008;z-index:10;align-items:flex-end}.modal.show{display:flex}.sheet{width:100%;max-width:720px;margin:auto 0 0;background:#fff;border-radius:22px 22px 0 0;padding:20px}
+.modal{display:none;position:fixed;inset:0;background:#0008;z-index:10;align-items:flex-end}.modal.show{display:flex}.sheet{width:100%;max-width:720px;margin:auto 0 0;background:#fff;border-radius:22px 22px 0 0;padding:20px;max-height:90vh;overflow-y:auto;}
 .sheet h2{margin:0 0 8px;font-size:21px}.sheet .date-label{font-size:13px;color:var(--muted);margin-bottom:12px}
 label{display:block;font-size:12px;font-weight:750;color:var(--muted);margin:10px 0 5px}
-input{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:16px}
+input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:16px;background:#fff;color:var(--ink);margin-bottom:10px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.actions{display:flex;gap:8px;margin-top:14px}.actions button{flex:1}
-.install{display:none;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:12px;padding:10px;font-size:12px;margin-bottom:12px}
+.day-toggles{display:flex;gap:4px;margin-bottom:12px}
+.day-toggle{flex:1;text-align:center;padding:8px 0;background:#f3f4f6;border-radius:8px;font-size:12px;font-weight:bold;cursor:pointer;user-select:none;border:1px solid transparent}
+.day-toggle.active{background:#111827;color:#fff}
+.auth-container{max-width:400px;margin:40px auto;background:#fff;padding:20px;border-radius:17px;box-shadow:0 2px 12px #0000000b;text-align:center}
+#errorMsg{color:var(--danger);font-size:12px;margin-bottom:10px;display:none}
 @media(min-width:650px){.modal{align-items:center}.sheet{border-radius:18px;margin:auto}}
 </style>
 </head>
 <body>
-<header><h1>My Rota</h1><p>2-week repeating rota · Current Cycle: Week 2</p></header>
-<main>
-<div id="install" class="install">To install: use your browser menu and choose <b>Add to Home Screen</b> / <b>Install app</b>.</div>
-<div class="toolbar"><button onclick="month(-1)">‹</button><div class="month" id="title"></div><button onclick="month(1)">›</button></div>
-<div class="toolbar"><button class="primary" onclick="today()">Today</button><button class="blue" onclick="openShift()">＋ Add OT</button></div>
 
-<div class="card">
-    <div class="rate-setting">
-        <div>Base Hourly Rate (£):</div>
-        <input type="number" id="rateInput" value="13" step="0.1" onchange="updateRate()">
+<!-- Authentication Screen -->
+<div id="authScreen" class="auth-container">
+    <h2>Welcome to My Rota</h2>
+    <p style="font-size:13px; color:gray; margin-bottom: 20px;">Sign in or create an account to sync your shifts to the cloud.</p>
+    <div id="errorMsg"></div>
+    <input type="email" id="email" placeholder="Email Address">
+    <input type="password" id="password" placeholder="Password">
+    <div class="actions">
+        <button class="primary" onclick="login()">Log In</button>
+        <button class="blue" onclick="register()">Register</button>
     </div>
 </div>
 
-<div class="card">
-<div class="weekdays"><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div><div>SUN</div></div>
-<div class="grid" id="grid"></div>
+<!-- Main App (Hidden until auth) -->
+<div id="mainApp" style="display:none;">
+    <header>
+        <div class="header-text">
+            <h1>My Rota</h1>
+            <p id="headCycle">2-week repeating rota</p>
+        </div>
+        <div class="header-actions">
+            <button class="icon-btn" onclick="openSettings()">⚙</button>
+            <button class="icon-btn" onclick="logout()">⎋</button>
+        </div>
+    </header>
+    <main style="display:block;">
+    <div class="toolbar"><button onclick="month(-1)">‹</button><div class="month" id="title"></div><button onclick="month(1)">›</button></div>
+    <div class="toolbar"><button class="primary" onclick="today()">Today</button><button class="blue" onclick="openShift()">＋ Add OT</button></div>
+
+    <div class="card">
+    <div class="weekdays"><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div><div>SUN</div></div>
+    <div class="grid" id="grid"></div>
+    </div>
+
+    <div class="card">
+    <div class="stats">
+    <div class="stat"><b id="normal">0</b><span>Normal Hrs</span></div>
+    <div class="stat"><b id="extras">0</b><span>OT Hrs</span></div>
+    <div class="stat"><b id="total">0</b><span>Total Hrs</span></div>
+    </div>
+    <div class="stats" style="margin-top: 7px;">
+    <div class="stat"><b id="earnNormal">£0</b><span>Normal Pay</span></div>
+    <div class="stat"><b id="earnOT">£0</b><span>OT Pay</span></div>
+    <div class="stat"><b id="earnTotal">£0</b><span>Total Pay</span></div>
+    </div>
+    <div class="weekly-breakdown" id="weekly"></div>
+    </div>
+    </main>
 </div>
 
-<div class="card">
-<div class="stats">
-<div class="stat"><b id="normal">0</b><span>Normal Hrs</span></div>
-<div class="stat"><b id="extras">0</b><span>OT Hrs</span></div>
-<div class="stat"><b id="total">0</b><span>Total Hrs</span></div>
-</div>
-<div class="stats" style="margin-top: 7px;">
-<div class="stat"><b id="earnNormal">£0</b><span>Normal Pay</span></div>
-<div class="stat"><b id="earnOT">£0</b><span>OT Pay</span></div>
-<div class="stat"><b id="earnTotal">£0</b><span>Total Pay</span></div>
-</div>
-<div class="weekly-breakdown" id="weekly"></div>
-</div>
-
-<div class="card"><div class="info"><b>Permanent rota</b><br>Week 1: Monday · Saturday · Sunday<br>Week 2: Monday · Wednesday · Friday<br><br><b>Overtime (OT)</b><br>OT shifts are paid at Base Rate + £1. Tap any date to add, edit or remove an OT shift.</div></div>
-</main>
-
+<!-- Shift Modal -->
 <div class="modal" id="modal"><div class="sheet">
 <h2 id="modalHead">Overtime Shift</h2><div class="date-label" id="modalDate"></div>
 <label>Date</label><input id="date" type="date">
 <div class="row"><div><label>Start time</label><input id="start" type="time" value="07:00"></div><div><label>End time</label><input id="end" type="time" value="19:00"></div></div>
 <label>Note</label><input id="note" placeholder="e.g. picked up extra shift">
-<div class="actions"><button onclick="closeModal()">Cancel</button><button class="blue" onclick="save()">Save</button></div>
+<div class="actions"><button onclick="closeModal('modal')">Cancel</button><button class="blue" onclick="saveShift()">Save</button></div>
 <div class="actions"><button class="danger" id="del" onclick="removeShift()">Delete OT</button></div>
 </div></div>
 
-<script>
-const ANCHOR="2026-09-07"; 
-const W2=new Set([0,2,4]), W1=new Set([0,5,6]);
-let view=new Date(); 
-let extras=JSON.parse(localStorage.getItem("myRotaExtras")||"{}"); 
-let selected=null;
-let baseRate=parseFloat(localStorage.getItem("myRotaRate")||"13");
+<!-- Settings Modal -->
+<div class="modal" id="settingsModal"><div class="sheet">
+<h2>Rota Settings</h2>
+<label>Base Hourly Rate (£)</label>
+<input type="number" id="setRate" step="0.1" value="13">
 
-document.getElementById("rateInput").value = baseRate;
+<label>Week 1 Working Days</label>
+<div class="day-toggles" id="togglesW1">
+    <div class="day-toggle" onclick="toggleDay(this, 0)">M</div><div class="day-toggle" onclick="toggleDay(this, 1)">T</div><div class="day-toggle" onclick="toggleDay(this, 2)">W</div><div class="day-toggle" onclick="toggleDay(this, 3)">T</div><div class="day-toggle" onclick="toggleDay(this, 4)">F</div><div class="day-toggle" onclick="toggleDay(this, 5)">S</div><div class="day-toggle" onclick="toggleDay(this, 6)">S</div>
+</div>
 
-function updateRate() {
-    let newRate = parseFloat(document.getElementById("rateInput").value);
-    if(!isNaN(newRate)) {
-        baseRate = newRate;
-        localStorage.setItem("myRotaRate", baseRate);
+<label>Week 2 Working Days</label>
+<div class="day-toggles" id="togglesW2">
+    <div class="day-toggle" onclick="toggleDay(this, 0)">M</div><div class="day-toggle" onclick="toggleDay(this, 1)">T</div><div class="day-toggle" onclick="toggleDay(this, 2)">W</div><div class="day-toggle" onclick="toggleDay(this, 3)">T</div><div class="day-toggle" onclick="toggleDay(this, 4)">F</div><div class="day-toggle" onclick="toggleDay(this, 5)">S</div><div class="day-toggle" onclick="toggleDay(this, 6)">S</div>
+</div>
+
+<label>Cycle Anchor Date (Pick any Monday)</label>
+<input type="date" id="setAnchorDate">
+
+<label>Was that Monday in Week 1 or Week 2?</label>
+<select id="setAnchorWeek">
+    <option value="1">Week 1</option>
+    <option value="2">Week 2</option>
+</select>
+
+<div class="actions"><button onclick="closeModal('settingsModal')">Cancel</button><button class="blue" onclick="saveSettings()">Save Settings</button></div>
+</div></div>
+
+<!-- Firebase SDKs & App Logic -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD8IYwfAzxYEgYu9T-WFkq8RAj9bJVfPyo",
+  authDomain: "my-rota-fe2f3.firebaseapp.com",
+  projectId: "my-rota-fe2f3",
+  storageBucket: "my-rota-fe2f3.firebasestorage.app",
+  messagingSenderId: "685191190045",
+  appId: "1:685191190045:web:10878b6995bd4549d3d8f4",
+  measurementId: "G-WN5Z55MH1T"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Global Variables
+let currentUser = null;
+let view = new Date();
+let extras = {};
+const defaultSettings = { rate: 13, anchorDate: "2026-09-07", anchorWeek: 2, w1: [0,5,6], w2: [0,2,4] };
+let settings = { ...defaultSettings };
+let selected = null;
+
+// Auth Functions
+window.login = () => {
+    let e = document.getElementById("email").value, p = document.getElementById("password").value;
+    signInWithEmailAndPassword(auth, e, p).catch(err => showError(err.message));
+};
+window.register = () => {
+    let e = document.getElementById("email").value, p = document.getElementById("password").value;
+    createUserWithEmailAndPassword(auth, e, p).catch(err => showError(err.message));
+};
+window.logout = () => signOut(auth);
+
+function showError(msg) {
+    let el = document.getElementById("errorMsg");
+    el.textContent = msg;
+    el.style.display = "block";
+}
+
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        currentUser = user;
+        document.getElementById("authScreen").style.display = "none";
+        document.getElementById("mainApp").style.display = "block";
+        await loadCloudData();
         render();
+    } else {
+        currentUser = null;
+        document.getElementById("authScreen").style.display = "block";
+        document.getElementById("mainApp").style.display = "none";
+    }
+});
+
+async function loadCloudData() {
+    if(!currentUser) return;
+    const docRef = doc(db, "users", currentUser.uid);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        let data = docSnap.data();
+        extras = data.extras || {};
+        settings = data.settings || defaultSettings;
+    } else {
+        extras = {};
+        settings = { ...defaultSettings };
     }
 }
 
-// Added 12 hours (noon) to avoid UK BST timezone shifts turning dates back by 1 day
+async function saveToCloud() {
+    if(currentUser) {
+        await setDoc(doc(db, "users", currentUser.uid), { settings, extras });
+    }
+}
+
+// Logic & Render Functions
 function iso(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate(), 12).toISOString().slice(0,10)}
-function dateFrom(s){let [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)}
+function dateFrom(s){let [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d,12)}
 function diff(a,b){return Math.round((dateFrom(a)-dateFrom(b))/86400000)}
 
 function getHours(start, end) {
@@ -122,59 +230,52 @@ function getHours(start, end) {
 }
 
 function permanent(d){
- let x=diff(iso(d),ANCHOR); 
- let week=Math.floor(x/7)%2;
- if(week < 0) week += 2;
- let wd=(d.getDay()+6)%7;
- return (week===0?W2:W1).has(wd);
+ let x = diff(iso(d), settings.anchorDate);
+ let weekDiff = Math.floor(x/7);
+ let isAnchorW1 = parseInt(settings.anchorWeek) === 1;
+ let cycle = (isAnchorW1 ? weekDiff : weekDiff + 1) % 2;
+ if(cycle < 0) cycle += 2;
+ let wd = (d.getDay()+6)%7;
+ return (cycle === 0 ? new Set(settings.w1) : new Set(settings.w2)).has(wd);
 }
 
 function render(){
- let y=view.getFullYear(),m=view.getMonth();
+ let cycleWeek = diff(iso(new Date()), settings.anchorDate);
+ cycleWeek = Math.floor(cycleWeek/7);
+ let isAnchorW1 = parseInt(settings.anchorWeek) === 1;
+ let cycle = (isAnchorW1 ? cycleWeek : cycleWeek + 1) % 2;
+ if(cycle < 0) cycle += 2;
+ document.getElementById("headCycle").textContent = `Current Cycle: Week ${cycle === 0 ? 1 : 2}`;
  
- // Adjusting the period to start on the 26th of previous month and end 25th of current month
- let pStart = new Date(y, m-1, 26);
- let pEnd = new Date(y, m, 25);
+ let y=view.getFullYear(), m=view.getMonth();
+ let pStart = new Date(y, m-1, 26), pEnd = new Date(y, m, 25);
  let start = (pStart.getDay()+6)%7; 
  let days = Math.round((pEnd - pStart)/86400000) + 1;
 
  document.getElementById("title").textContent="Period Ending 25 " + pEnd.toLocaleDateString("en-GB",{month:"short",year:"numeric"});
  let g=document.getElementById("grid");g.innerHTML="";
  
- let normalHrs=0, otHrs=0;
+ let normalHrs=0, otHrs=0, currentWeekHrs=0, weekCount=1;
  let weeklyHtml = "<b>Weekly Breakdown (Hours):</b>";
- let currentWeekHrs = 0;
- let weekCount = 1;
 
  for(let i=0;i<42;i++){
   let dayOffset = i - start;
   let d = new Date(y, m-1, 26 + dayOffset);
   let other = dayOffset < 0 || dayOffset >= days;
-  let key = iso(d);
-  let p = permanent(d);
-  let x = extras[key];
+  let key = iso(d), p = permanent(d), x = extras[key];
   
   let dayHrs = 0;
   if(p && !other) { normalHrs += 12.5; dayHrs += 12.5; }
-  if(x && !other) { 
-    let shiftHrs = getHours(x.start, x.end);
-    otHrs += shiftHrs; 
-    dayHrs += shiftHrs; 
-  }
-  
+  if(x && !other) { let h = getHours(x.start, x.end); otHrs += h; dayHrs += h; }
   if(!other) currentWeekHrs += dayHrs;
 
   let c=document.createElement("div");c.className="day"+(other?" other":"")+(key===iso(new Date())?" today":"");
   c.innerHTML='<div class="num">'+d.getDate()+'</div>'+ (p?'<span class="badge work">WORK</span>':'')+(x?'<span class="badge extra">OT '+(x.start||'')+'</span>':'');
   if(!other)c.onclick=()=>openShift(key);g.appendChild(c);
 
-  // End of the week (Sunday)
   if((i+1)%7 === 0) {
-      if(currentWeekHrs > 0) {
-          weeklyHtml += `<div>Week ${weekCount} (ending ${d.getDate()} ${d.toLocaleDateString('en-GB',{month:'short'})}) <b>${currentWeekHrs.toFixed(1)} hrs</b></div>`;
-      }
-      currentWeekHrs = 0;
-      weekCount++;
+      if(currentWeekHrs > 0) weeklyHtml += `<div>Week ${weekCount} (ending ${d.getDate()} ${d.toLocaleDateString('en-GB',{month:'short'})}) <b>${currentWeekHrs.toFixed(1)} hrs</b></div>`;
+      currentWeekHrs = 0; weekCount++;
   }
  }
  
@@ -182,25 +283,61 @@ function render(){
  document.getElementById("extras").textContent=otHrs.toFixed(1);
  document.getElementById("total").textContent=(normalHrs+otHrs).toFixed(1);
  
- // Earnings Calculations
- let payNormal = normalHrs * baseRate;
- let payOT = otHrs * (baseRate + 1);
+ let payNormal = normalHrs * parseFloat(settings.rate);
+ let payOT = otHrs * (parseFloat(settings.rate) + 1);
  document.getElementById("earnNormal").textContent="£" + payNormal.toFixed(2);
  document.getElementById("earnOT").textContent="£" + payOT.toFixed(2);
  document.getElementById("earnTotal").textContent="£" + (payNormal + payOT).toFixed(2);
-
  document.getElementById("weekly").innerHTML=weeklyHtml;
 }
-function month(n){view=new Date(view.getFullYear(),view.getMonth()+n,1);render()}
-function today(){let d=new Date();view=new Date(d.getFullYear(),d.getMonth(),1);render()}
-function openShift(key=iso(new Date())){
- selected=key;let x=extras[key];document.getElementById("date").value=key;document.getElementById("start").value=x?.start||"07:00";document.getElementById("end").value=x?.end||"19:00";document.getElementById("note").value=x?.note||"";document.getElementById("modalDate").textContent=dateFrom(key).toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});document.getElementById("del").style.display=x?"block":"none";document.getElementById("modal").classList.add("show")
-}
-function closeModal(){document.getElementById("modal").classList.remove("show")}
-function save(){let k=document.getElementById("date").value;if(!k)return;extras[k]={start:document.getElementById("start").value,end:document.getElementById("end").value,note:document.getElementById("note").value};localStorage.setItem("myRotaExtras",JSON.stringify(extras));closeModal();render()}
-function removeShift(){if(selected){delete extras[selected];localStorage.setItem("myRotaExtras",JSON.stringify(extras));closeModal();render()}}
-if(location.protocol==="https:"&&"serviceWorker"in navigator)navigator.serviceWorker.register("sw.js");
-document.getElementById("install").style.display="block";render();
+
+window.month = n => {view=new Date(view.getFullYear(),view.getMonth()+n,1); render()};
+window.today = () => {let d=new Date(); view=new Date(d.getFullYear(),d.getMonth(),1); render()};
+
+window.openShift = (key=iso(new Date())) => {
+ selected=key; let x=extras[key];
+ document.getElementById("date").value=key; document.getElementById("start").value=x?.start||"07:00"; document.getElementById("end").value=x?.end||"19:00"; document.getElementById("note").value=x?.note||"";
+ document.getElementById("modalDate").textContent=dateFrom(key).toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+ document.getElementById("del").style.display=x?"block":"none";
+ document.getElementById("modal").classList.add("show");
+};
+
+window.closeModal = id => document.getElementById(id).classList.remove("show");
+
+window.saveShift = async () => {
+ let k=document.getElementById("date").value; if(!k) return;
+ extras[k]={start:document.getElementById("start").value,end:document.getElementById("end").value,note:document.getElementById("note").value};
+ window.closeModal('modal'); render(); saveToCloud();
+};
+
+window.removeShift = async () => {
+ if(selected){delete extras[selected]; window.closeModal('modal'); render(); saveToCloud();}
+};
+
+window.toggleDay = (el) => el.classList.toggle("active");
+
+window.openSettings = () => {
+ document.getElementById("setRate").value = settings.rate; document.getElementById("setAnchorDate").value = settings.anchorDate; document.getElementById("setAnchorWeek").value = settings.anchorWeek;
+ let w1Toggles = document.getElementById("togglesW1").children, w2Toggles = document.getElementById("togglesW2").children;
+ for(let i=0; i<7; i++) {
+    w1Toggles[i].classList.toggle("active", settings.w1.includes(i));
+    w2Toggles[i].classList.toggle("active", settings.w2.includes(i));
+ }
+ document.getElementById("settingsModal").classList.add("show");
+};
+
+window.saveSettings = async () => {
+ settings.rate = document.getElementById("setRate").value; settings.anchorDate = document.getElementById("setAnchorDate").value; settings.anchorWeek = document.getElementById("setAnchorWeek").value;
+ settings.w1 = []; settings.w2 = [];
+ let w1Toggles = document.getElementById("togglesW1").children, w2Toggles = document.getElementById("togglesW2").children;
+ for(let i=0; i<7; i++) {
+    if(w1Toggles[i].classList.contains("active")) settings.w1.push(i);
+    if(w2Toggles[i].classList.contains("active")) settings.w2.push(i);
+ }
+ window.closeModal('settingsModal'); render(); saveToCloud();
+};
+
+if(location.protocol==="https:"&&"serviceWorker"in navigator) navigator.serviceWorker.register("sw.js");
 </script>
 </body>
 </html>
