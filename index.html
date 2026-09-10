@@ -225,14 +225,17 @@ window.login = () => signInWithEmailAndPassword(auth, document.getElementById("e
 window.register = () => createUserWithEmailAndPassword(auth, document.getElementById("email").value, document.getElementById("password").value).catch(err => showError(err.message));
 window.logout = () => signOut(auth);
 
+// New smarter password reset logic
 window.resetPassword = () => {
-    let e = document.getElementById("email").value;
+    let e = document.getElementById("email").value.trim();
     if (!e) {
-        showError("Please enter your email address first, then click Forgot Password.");
-        return;
+        e = prompt("Please enter the email address for your account:");
+        if (!e) return; // The user clicked cancel
+        document.getElementById("email").value = e; // Fill it in for them
     }
+    
     sendPasswordResetEmail(auth, e)
-        .then(() => showError("Password reset email sent! Check your inbox.", true))
+        .then(() => showError("Reset link sent! Please check your Inbox and Spam folders.", true))
         .catch(err => showError(err.message));
 };
 
@@ -349,7 +352,6 @@ window.openShift = (key=iso(new Date())) => {
  document.getElementById("modal").classList.add("show");
 };
 
-/* LEAVE TRACKER LOGIC */
 window.openLeave = () => { currentLeaveYear = new Date().getFullYear(); renderLeaveTracker(); document.getElementById("leaveModal").classList.add("show"); };
 window.changeLeaveYear = (n) => { currentLeaveYear += n; renderLeaveTracker(); };
 window.renderLeaveTracker = () => {
