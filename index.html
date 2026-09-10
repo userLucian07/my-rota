@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.json">
 <title>My Rota</title>
 <style>
-:root{--bg:#f3f4f6;--card:#fff;--ink:#111827;--muted:#6b7280;--line:#e5e7eb;--work:#111827;--extra:#2563eb;--al:#10b981;--sick:#f59e0b;--mat:#ec4899;--pat:#0ea5e9;--danger:#b91c1c}
+:root{--bg:#f3f4f6;--card:#fff;--ink:#111827;--muted:#6b7280;--line:#e5e7eb;--work:#111827;--extra:#2563eb;--al:#10b981;--sick:#f59e0b;--mat:#ec4899;--pat:#0ea5e9;--bh:#8b5cf6;--danger:#b91c1c}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 header{background:#111827;color:#fff;padding:20px 16px 18px;position:sticky;top:0;z-index:4;display:flex;justify-content:space-between;align-items:center;}
 .header-text h1{margin:0;font-size:26px}.header-text p{margin:4px 0 0;color:#cbd5e1;font-size:13px}
@@ -28,7 +28,8 @@ button.primary{background:#111827;color:white}.blue{background:#2563eb;color:whi
 .day.other{opacity:.32}.day.today{outline:2px solid #f59e0b;outline-offset:-2px}
 .num{font-size:12px;font-weight:800;margin-bottom:auto}
 .badge{display:block;text-align:center;border-radius:7px;padding:4px 2px;margin-top:4px;font-size:9px;font-weight:800;white-space:nowrap;overflow:hidden}
-.work{background:#111827;color:#fff}.extra{background:var(--extra);color:#fff}.al{background:var(--al);color:#fff}.sick{background:var(--sick);color:#fff}.mat{background:var(--mat);color:#fff}.pat{background:var(--pat);color:#fff}
+.work{background:#111827;color:#fff}.extra{background:var(--extra);color:#fff}.al{background:var(--al);color:#fff}.sick{background:var(--sick);color:#fff}.mat{background:var(--mat);color:#fff}.pat{background:var(--pat);color:#fff}.bh{background:var(--bh);color:#fff}
+.gov-bh{background:#f59e0b;color:#fff}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.stat{text-align:center;background:#f8fafc;border-radius:12px;padding:10px}.stat b{font-size:19px;display:block}.stat span{font-size:10px;color:var(--muted)}
 .weekly-breakdown{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:13px}
 .weekly-breakdown div{display:flex;justify-content:space-between;padding:4px 0;color:var(--muted)}
@@ -129,8 +130,9 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
 <div class="stat"><b id="earnMat">£0</b><span>Mat Pay</span></div>
 <div class="stat"><b id="earnPat">£0</b><span>Pat Pay</span></div>
 </div>
-<div class="stats" style="margin-bottom: 15px;">
-<div class="stat" style="grid-column: span 3; background:#111827; color:#fff;"><b id="earnGrand" style="font-size:24px;">£0</b><span style="color:#cbd5e1;">GRAND TOTAL</span></div>
+<div class="stats" style="margin-bottom: 15px; grid-template-columns: 1fr 2fr;">
+<div class="stat"><b id="earnBH">£0</b><span>BH Pay</span></div>
+<div class="stat" style="background:#111827; color:#fff;"><b id="earnGrand" style="font-size:24px;">£0</b><span style="color:#cbd5e1;">GRAND TOTAL</span></div>
 </div>
 <div class="actions"><button onclick="closeModal('payModal')">Close</button></div>
 </div></div>
@@ -147,6 +149,7 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
     <option value="sick">Sick Day</option>
     <option value="mat">Maternity Leave</option>
     <option value="pat">Paternity Leave</option>
+    <option value="bh">Bank Holiday Worked (BH)</option>
 </select>
 
 <div id="timeFields" class="row">
@@ -218,6 +221,18 @@ let currentUser = null, view = new Date(), extras = {}, selected = null;
 const defaultSettings = { rate: 13, alAllowance: 210, alMonth: 0, anchorDate: "2026-09-07", anchorWeek: 2, w1: [0,5,6], w2: [0,2,4] };
 let settings = { ...defaultSettings };
 let currentLeaveYear = new Date().getFullYear();
+let govBankHolidays = new Set();
+
+// Fetch Official UK Bank Holidays
+async function fetchBankHolidays() {
+    try {
+        let res = await fetch("https://www.gov.uk/bank-holidays.json");
+        let data = await res.json();
+        data["england-and-wales"].events.forEach(e => govBankHolidays.add(e.date));
+        if(currentUser) render();
+    } catch(err) { console.log("Could not load Bank Holidays from Gov.uk"); }
+}
+fetchBankHolidays(); // Load in background instantly
 
 function showError(msg, isSuccess = false) { 
     let el = document.getElementById("errorMsg"); 
@@ -285,7 +300,7 @@ function render(){
 
  let g=document.getElementById("grid");g.innerHTML="";
  let normalHrs=0, otHrs=0, currentWeekHrs=0, weekCount=1;
- let payNormal=0, payOT=0, payAL=0, paySick=0, payMat=0, payPat=0;
+ let payNormal=0, payOT=0, payAL=0, paySick=0, payMat=0, payPat=0, payBH=0;
  let weeklyHtml = "<b>Weekly Breakdown (Total Worked Hrs):</b>";
 
  for(let i=0;i<42;i++){
@@ -293,26 +308,33 @@ function render(){
   let key = iso(d), p = permanent(d), x = extras[key], dayHrs = 0;
   
   let isWorkDay = p && !other;
-  let hasSpecial = false;
+  let isGovBH = govBankHolidays.has(key);
+  let hasSpecial = false; // Controls overlap protection
 
   if (x && !other) {
       if (x.type === 'al') { hasSpecial = true; payAL += parseFloat(x.hrs) * parseFloat(x.rate); }
       else if (x.type === 'sick') { hasSpecial = true; paySick += parseFloat(x.hrs) * parseFloat(x.rate); }
       else if (x.type === 'mat') { hasSpecial = true; payMat += parseFloat(x.hrs) * parseFloat(x.rate); }
       else if (x.type === 'pat') { hasSpecial = true; payPat += parseFloat(x.hrs) * parseFloat(x.rate); }
+      else if (x.type === 'bh') { hasSpecial = true; payBH += parseFloat(x.hrs) * parseFloat(x.rate); }
       else { let h = getHours(x.start, x.end); otHrs += h; dayHrs += h; payOT += h * (parseFloat(settings.rate) + 1); }
   }
   
+  // If it's a permanent shift and NO special custom override was logged, apply base normal pay.
   if (isWorkDay && !hasSpecial) { normalHrs += 12.5; dayHrs += 12.5; payNormal += 12.5 * parseFloat(settings.rate); }
   if (!other) currentWeekHrs += dayHrs;
 
   let c=document.createElement("div");c.className="day"+(other?" other":"")+(key===iso(new Date())?" today":"");
+  
+  // Build Badges ensuring visual clarity during overlap
   let label = p && !hasSpecial ? '<span class="badge work">WORK</span>' : '';
+  if (isGovBH) label += '<span class="badge gov-bh">🏦 BH</span>';
   
   if (x && x.type === 'al') label += '<span class="badge al">LEAVE</span>';
   if (x && x.type === 'sick') label += '<span class="badge sick">SICK</span>';
   if (x && x.type === 'mat') label += '<span class="badge mat">MATERNITY</span>';
   if (x && x.type === 'pat') label += '<span class="badge pat">PATERNITY</span>';
+  if (x && x.type === 'bh') label += '<span class="badge bh">BH WORKED</span>';
   if (x && (!x.type || x.type === 'ot')) label += `<span class="badge extra">OT ${x.start}</span>`;
   
   c.innerHTML=`<div class="num">${d.getDate()}</div>${label}`;
@@ -327,13 +349,16 @@ function render(){
  document.getElementById("normal").textContent=normalHrs.toFixed(1);
  document.getElementById("extras").textContent=otHrs.toFixed(1);
  document.getElementById("total").textContent=(normalHrs+otHrs).toFixed(1);
+ 
  document.getElementById("earnNormal").textContent="£" + payNormal.toFixed(2);
  document.getElementById("earnOT").textContent="£" + payOT.toFixed(2);
  document.getElementById("earnAL").textContent="£" + payAL.toFixed(2);
  document.getElementById("earnSick").textContent="£" + paySick.toFixed(2);
  document.getElementById("earnMat").textContent="£" + payMat.toFixed(2);
  document.getElementById("earnPat").textContent="£" + payPat.toFixed(2);
- document.getElementById("earnGrand").textContent="£" + (payNormal + payOT + payAL + paySick + payMat + payPat).toFixed(2);
+ document.getElementById("earnBH").textContent="£" + payBH.toFixed(2);
+ document.getElementById("earnGrand").textContent="£" + (payNormal + payOT + payAL + paySick + payMat + payPat + payBH).toFixed(2);
+ 
  document.getElementById("weekly").innerHTML=weeklyHtml;
 }
 
