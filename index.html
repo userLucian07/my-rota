@@ -150,6 +150,7 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
     <option value="mat">Maternity Leave</option>
     <option value="pat">Paternity Leave</option>
     <option value="bh">Bank Holiday Worked (BH)</option>
+    <option value="swap">Shift Swap (Move Day)</option>
 </select>
 
 <div id="timeFields" class="row">
@@ -230,9 +231,9 @@ async function fetchBankHolidays() {
         let data = await res.json();
         data["england-and-wales"].events.forEach(e => govBankHolidays.add(e.date));
         if(currentUser) render();
-    } catch(err) { console.log("Could not load Bank Holidays from Gov.uk"); }
+    } catch(err) { console.log("Could not load Bank Holidays"); }
 }
-fetchBankHolidays(); // Load in background instantly
+fetchBankHolidays(); 
 
 function showError(msg, isSuccess = false) { 
     let el = document.getElementById("errorMsg"); 
@@ -309,7 +310,7 @@ function render(){
   
   let isWorkDay = p && !other;
   let isGovBH = govBankHolidays.has(key);
-  let hasSpecial = false; // Controls overlap protection
+  let hasSpecial = false;
 
   if (x && !other) {
       if (x.type === 'al') { hasSpecial = true; payAL += parseFloat(x.hrs) * parseFloat(x.rate); }
@@ -317,16 +318,20 @@ function render(){
       else if (x.type === 'mat') { hasSpecial = true; payMat += parseFloat(x.hrs) * parseFloat(x.rate); }
       else if (x.type === 'pat') { hasSpecial = true; payPat += parseFloat(x.hrs) * parseFloat(x.rate); }
       else if (x.type === 'bh') { hasSpecial = true; payBH += parseFloat(x.hrs) * parseFloat(x.rate); }
+      else if (x.type === 'swap') {
+          hasSpecial = true;
+          // If swapping onto a non-working day, add 12.5 hrs normal pay
+          if (!p) { normalHrs += 12.5; dayHrs += 12.5; payNormal += 12.5 * parseFloat(settings.rate); }
+          // If swapping off a working day (p is true), do nothing (0 hours).
+      }
       else { let h = getHours(x.start, x.end); otHrs += h; dayHrs += h; payOT += h * (parseFloat(settings.rate) + 1); }
   }
   
-  // If it's a permanent shift and NO special custom override was logged, apply base normal pay.
   if (isWorkDay && !hasSpecial) { normalHrs += 12.5; dayHrs += 12.5; payNormal += 12.5 * parseFloat(settings.rate); }
   if (!other) currentWeekHrs += dayHrs;
 
   let c=document.createElement("div");c.className="day"+(other?" other":"")+(key===iso(new Date())?" today":"");
   
-  // Build Badges ensuring visual clarity during overlap
   let label = p && !hasSpecial ? '<span class="badge work">WORK</span>' : '';
   if (isGovBH) label += '<span class="badge gov-bh">🏦 BH</span>';
   
@@ -335,6 +340,10 @@ function render(){
   if (x && x.type === 'mat') label += '<span class="badge mat">MATERNITY</span>';
   if (x && x.type === 'pat') label += '<span class="badge pat">PATERNITY</span>';
   if (x && x.type === 'bh') label += '<span class="badge bh">BH WORKED</span>';
+  if (x && x.type === 'swap') {
+      if (p) label += '<span class="badge" style="background:#9ca3af;color:#fff;">SWAPPED OFF</span>';
+      else label += '<span class="badge" style="background:#111827;color:#fff;">SWAPPED ON</span>';
+  }
   if (x && (!x.type || x.type === 'ot')) label += `<span class="badge extra">OT ${x.start}</span>`;
   
   c.innerHTML=`<div class="num">${d.getDate()}</div>${label}`;
@@ -368,7 +377,7 @@ window.today = () => {let d=new Date(); view=new Date(d.getFullYear(),d.getMonth
 window.toggleShiftFields = () => {
     let t = document.getElementById("shiftType").value;
     document.getElementById("timeFields").style.display = t === 'ot' ? "grid" : "none";
-    document.getElementById("customFields").style.display = t !== 'ot' ? "grid" : "none";
+    document.getElementById("customFields").style.display = (t !== 'ot' && t !== 'swap') ? "grid" : "none";
 };
 
 window.openShift = (key=iso(new Date())) => {
