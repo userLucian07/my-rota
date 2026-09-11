@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.json">
 <title>My Rota</title>
 <style>
-:root{--bg:#f3f4f6;--card:#fff;--ink:#111827;--muted:#6b7280;--line:#e5e7eb;--work:#111827;--extra:#2563eb;--al:#10b981;--sick:#f59e0b;--mat:#ec4899;--pat:#0ea5e9;--bh:#8b5cf6;--danger:#b91c1c}
+:root{--bg:#f3f4f6;--card:#fff;--ink:#111827;--muted:#6b7280;--line:#e5e7eb;--work:#111827;--extra:#2563eb;--al:#10b981;--sick:#f59e0b;--mat:#ec4899;--pat:#0ea5e9;--bh:#8b5cf6;--tr:#0d9488;--danger:#b91c1c}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 header{background:#111827;color:#fff;padding:20px 16px 18px;position:sticky;top:0;z-index:4;display:flex;justify-content:space-between;align-items:center;}
 .header-text h1{margin:0;font-size:26px}.header-text p{margin:4px 0 0;color:#cbd5e1;font-size:13px}
@@ -28,7 +28,7 @@ button.primary{background:#111827;color:white}.blue{background:#2563eb;color:whi
 .day.other{opacity:.32}.day.today{outline:2px solid #f59e0b;outline-offset:-2px}
 .num{font-size:12px;font-weight:800;margin-bottom:auto}
 .badge{display:block;text-align:center;border-radius:7px;padding:4px 2px;margin-top:4px;font-size:9px;font-weight:800;white-space:nowrap;overflow:hidden}
-.work{background:#111827;color:#fff}.extra{background:var(--extra);color:#fff}.al{background:var(--al);color:#fff}.sick{background:var(--sick);color:#fff}.mat{background:var(--mat);color:#fff}.pat{background:var(--pat);color:#fff}.bh{background:var(--bh);color:#fff}
+.work{background:#111827;color:#fff}.extra{background:var(--extra);color:#fff}.al{background:var(--al);color:#fff}.sick{background:var(--sick);color:#fff}.mat{background:var(--mat);color:#fff}.pat{background:var(--pat);color:#fff}.bh{background:var(--bh);color:#fff}.tr{background:var(--tr);color:#fff}
 .gov-bh{background:#f59e0b;color:#fff}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.stat{text-align:center;background:#f8fafc;border-radius:12px;padding:10px}.stat b{font-size:19px;display:block}.stat span{font-size:10px;color:var(--muted)}
 .weekly-breakdown{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:13px}
@@ -130,9 +130,10 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
 <div class="stat"><b id="earnMat">£0</b><span>Mat Pay</span></div>
 <div class="stat"><b id="earnPat">£0</b><span>Pat Pay</span></div>
 </div>
-<div class="stats" style="margin-bottom: 15px; grid-template-columns: 1fr 2fr;">
+<div class="stats" style="margin-bottom: 15px;">
 <div class="stat"><b id="earnBH">£0</b><span>BH Pay</span></div>
-<div class="stat" style="background:#111827; color:#fff;"><b id="earnGrand" style="font-size:24px;">£0</b><span style="color:#cbd5e1;">GRAND TOTAL</span></div>
+<div class="stat"><b id="earnTR">£0</b><span>TR Pay</span></div>
+<div class="stat" style="background:#111827; color:#fff;"><b id="earnGrand" style="font-size:24px;">£0</b><span style="color:#cbd5e1;">TOTAL</span></div>
 </div>
 <div class="actions"><button onclick="closeModal('payModal')">Close</button></div>
 </div></div>
@@ -145,6 +146,7 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
 <label>Type of Entry</label>
 <select id="shiftType" onchange="toggleShiftFields()">
     <option value="ot">Overtime (OT)</option>
+    <option value="tr">Training Day</option>
     <option value="al">Annual Leave (AL)</option>
     <option value="sick">Sick Day</option>
     <option value="mat">Maternity Leave</option>
@@ -224,7 +226,6 @@ let settings = { ...defaultSettings };
 let currentLeaveYear = new Date().getFullYear();
 let govBankHolidays = new Set();
 
-// Fetch Official UK Bank Holidays
 async function fetchBankHolidays() {
     try {
         let res = await fetch("https://www.gov.uk/bank-holidays.json");
@@ -301,7 +302,7 @@ function render(){
 
  let g=document.getElementById("grid");g.innerHTML="";
  let normalHrs=0, otHrs=0, currentWeekHrs=0, weekCount=1;
- let payNormal=0, payOT=0, payAL=0, paySick=0, payMat=0, payPat=0, payBH=0;
+ let payNormal=0, payOT=0, payAL=0, paySick=0, payMat=0, payPat=0, payBH=0, payTR=0;
  let weeklyHtml = "<b>Weekly Breakdown (Total Worked Hrs):</b>";
 
  for(let i=0;i<42;i++){
@@ -318,13 +319,22 @@ function render(){
       else if (x.type === 'mat') { hasSpecial = true; payMat += parseFloat(x.hrs) * parseFloat(x.rate); }
       else if (x.type === 'pat') { hasSpecial = true; payPat += parseFloat(x.hrs) * parseFloat(x.rate); }
       else if (x.type === 'bh') { hasSpecial = true; payBH += parseFloat(x.hrs) * parseFloat(x.rate); }
+      else if (x.type === 'tr') { 
+          hasSpecial = true; 
+          let h = getHours(x.start, x.end); 
+          dayHrs += h; 
+          payTR += h * parseFloat(settings.rate); 
+      }
       else if (x.type === 'swap') {
           hasSpecial = true;
-          // If swapping onto a non-working day, add 12.5 hrs normal pay
           if (!p) { normalHrs += 12.5; dayHrs += 12.5; payNormal += 12.5 * parseFloat(settings.rate); }
-          // If swapping off a working day (p is true), do nothing (0 hours).
       }
-      else { let h = getHours(x.start, x.end); otHrs += h; dayHrs += h; payOT += h * (parseFloat(settings.rate) + 1); }
+      else { 
+          let h = getHours(x.start, x.end); 
+          otHrs += h; 
+          dayHrs += h; 
+          payOT += h * (parseFloat(settings.rate) + 1); 
+      }
   }
   
   if (isWorkDay && !hasSpecial) { normalHrs += 12.5; dayHrs += 12.5; payNormal += 12.5 * parseFloat(settings.rate); }
@@ -340,6 +350,7 @@ function render(){
   if (x && x.type === 'mat') label += '<span class="badge mat">MATERNITY</span>';
   if (x && x.type === 'pat') label += '<span class="badge pat">PATERNITY</span>';
   if (x && x.type === 'bh') label += '<span class="badge bh">BH WORKED</span>';
+  if (x && x.type === 'tr') label += '<span class="badge tr">TRAINING</span>';
   if (x && x.type === 'swap') {
       if (p) label += '<span class="badge" style="background:#9ca3af;color:#fff;">SWAPPED OFF</span>';
       else label += '<span class="badge" style="background:#111827;color:#fff;">SWAPPED ON</span>';
@@ -366,7 +377,8 @@ function render(){
  document.getElementById("earnMat").textContent="£" + payMat.toFixed(2);
  document.getElementById("earnPat").textContent="£" + payPat.toFixed(2);
  document.getElementById("earnBH").textContent="£" + payBH.toFixed(2);
- document.getElementById("earnGrand").textContent="£" + (payNormal + payOT + payAL + paySick + payMat + payPat + payBH).toFixed(2);
+ document.getElementById("earnTR").textContent="£" + payTR.toFixed(2);
+ document.getElementById("earnGrand").textContent="£" + (payNormal + payOT + payAL + paySick + payMat + payPat + payBH + payTR).toFixed(2);
  
  document.getElementById("weekly").innerHTML=weeklyHtml;
 }
@@ -376,8 +388,8 @@ window.today = () => {let d=new Date(); view=new Date(d.getFullYear(),d.getMonth
 
 window.toggleShiftFields = () => {
     let t = document.getElementById("shiftType").value;
-    document.getElementById("timeFields").style.display = t === 'ot' ? "grid" : "none";
-    document.getElementById("customFields").style.display = (t !== 'ot' && t !== 'swap') ? "grid" : "none";
+    document.getElementById("timeFields").style.display = (t === 'ot' || t === 'tr') ? "grid" : "none";
+    document.getElementById("customFields").style.display = (t !== 'ot' && t !== 'tr' && t !== 'swap') ? "grid" : "none";
 };
 
 window.openShift = (key=iso(new Date())) => {
