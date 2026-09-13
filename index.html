@@ -61,6 +61,11 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
         <button class="blue" onclick="register()">Register</button>
     </div>
     <a href="#" onclick="resetPassword()" style="display:block; margin-top:15px; font-size:12px; color:var(--extra); text-decoration:none; font-weight:bold;">Forgot Password?</a>
+    
+    <!-- Add this new disclaimer -->
+    <div style="margin-top: 15px; font-size: 11px; color: var(--muted); line-height: 1.4;">
+        By registering, you agree to the <a href="#" onclick="openTerms()" style="color: var(--extra); text-decoration: none; font-weight: bold;">Terms & Conditions</a>.
+    </div>
 </div>
 
 <!-- Main App -->
@@ -198,7 +203,23 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
 <input type="date" id="setAnchorDate">
 <label>Was that Monday in Week 1 or Week 2?</label>
 <select id="setAnchorWeek"><option value="1">Week 1</option><option value="2">Week 2</option></select>
+<!-- Add this new button -->
+<button style="width: 100%; margin-bottom: 10px; background: transparent; border: 1px solid var(--line); color: var(--muted);" onclick="openTerms()">Read Terms & Conditions</button>
 <div class="actions"><button onclick="closeModal('settingsModal')">Cancel</button><button class="blue" onclick="saveSettings()">Save Settings</button></div>
+<div class="actions"><button onclick="closeModal('settingsModal')">Cancel</button><button class="blue" onclick="saveSettings()">Save Settings</button></div>
+</div></div>
+
+<!-- Terms & Conditions Modal -->
+<div class="modal" id="termsModal"><div class="sheet">
+<h2>Terms & Conditions</h2>
+<div style="font-size: 12px; color: var(--muted); max-height: 50vh; overflow-y: auto; text-align: left; margin-bottom: 15px; line-height: 1.5;">
+    <b>1. Disclaimer of Accuracy</b><br>This app is a personal tracking tool, not professional payroll software. Always verify official payslips.<br><br>
+    <b>2. Limitation of Liability</b><br>The developer is not liable for indirect damages, lost wages, or data loss. Use at your own risk.<br><br>
+    <b>3. Intellectual Property</b><br>All code and design are the developer's property. Do not copy for commercial gain.<br><br>
+    <b>4. Acceptable Use</b><br>Do not attempt to hack, exploit, or disrupt the database or hosting.<br><br>
+    <b>5. Privacy</b><br>Data is stored securely via Google Firebase. You are responsible for keeping your password safe.
+</div>
+<div class="actions"><button class="blue" onclick="closeModal('termsModal')">Close</button></div>
 </div></div>
 
 <script type="module">
@@ -466,6 +487,8 @@ window.openSettings = () => {
  document.getElementById("settingsModal").classList.add("show");
 };
 
+window.openTerms = () => document.getElementById("termsModal").classList.add("show");
+    
 window.saveSettings = async () => {
  settings.rate = document.getElementById("setRate").value; 
  settings.alAllowance = document.getElementById("setAlAllowance").value;
