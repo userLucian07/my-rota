@@ -28,7 +28,7 @@ button.primary{background:#111827;color:white}.blue{background:#2563eb;color:whi
 .day.other{opacity:.32}.day.today{outline:2px solid #f59e0b;outline-offset:-2px}
 .num{font-size:12px;font-weight:800;margin-bottom:auto}
 .badge{display:block;text-align:center;border-radius:7px;padding:4px 2px;margin-top:4px;font-size:9px;font-weight:800;white-space:nowrap;overflow:hidden}
-.work{background:#111827;color:#fff}.extra{background:var(--extra);color:#fff}.al{background:var(--al);color:#fff}.sick{background:var(--sick);color:#fff}.mat{background:var(--mat);color:#fff}.pat{background:var(--pat);color:#fff}.bh{background:var(--bh);color:#fff}.tr{background:var(--tr);color:#fff}
+.work{background:#111827;color:#fff}.extra{background:#2563eb;color:#fff}.al{background:#10b981;color:#fff}.sick{background:#f59e0b;color:#fff}.mat{background:#ec4899;color:#fff}.pat{background:#0ea5e9;color:#fff}.bh{background:#8b5cf6;color:#fff}.tr{background:#0d9488;color:#fff}
 .gov-bh{background:#f59e0b;color:#fff}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.stat{text-align:center;background:#f8fafc;border-radius:12px;padding:10px}.stat b{font-size:19px;display:block}.stat span{font-size:10px;color:var(--muted)}
 .weekly-breakdown{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:13px}
@@ -52,7 +52,7 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
 <!-- Authentication Screen -->
 <div id="authScreen" class="auth-container">
     <h2>Welcome to My Rota</h2>
-    <p style="font-size:13px; color:gray; margin-bottom: 20px;">Sign in or create an account to sync your shifts to the cloud.</p>
+    <p style="font-size:13px; color:gray; margin-bottom: 15px;">🔒 Secure Cloud Rota & Payroll Management. Please sign in or register.</p>
     <div id="errorMsg"></div>
     <input type="email" id="email" placeholder="Email Address">
     <input type="password" id="password" placeholder="Password">
@@ -60,11 +60,10 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
         <button class="primary" onclick="login()">Log In</button>
         <button class="blue" onclick="register()">Register</button>
     </div>
-    <a href="#" onclick="resetPassword()" style="display:block; margin-top:15px; font-size:12px; color:var(--extra); text-decoration:none; font-weight:bold;">Forgot Password?</a>
+    <a href="#" onclick="resetPassword()" style="display:block; margin-top:12px; font-size:12px; color:var(--extra); text-decoration:none; font-weight:bold;">Forgot Password?</a>
     
-    <!-- Add this new disclaimer -->
-    <div style="margin-top: 15px; font-size: 11px; color: var(--muted); line-height: 1.4;">
-        By registering, you agree to the <a href="#" onclick="openTerms()" style="color: var(--extra); text-decoration: none; font-weight: bold;">Terms & Conditions</a>.
+    <div style="margin-top: 15px; font-size: 11px; color: var(--muted); line-height: 1.4; border-top: 1px solid var(--line); padding-top: 10px;">
+        By registering, you acknowledge our <a href="#" onclick="openTerms()" style="color: var(--extra); text-decoration: none; font-weight: bold;">Terms & Conditions</a>. Use at your own risk.
     </div>
 </div>
 
@@ -73,7 +72,7 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
     <header>
         <div class="header-text">
             <h1>My Rota</h1>
-            <p id="headCycle">2-week repeating rota</p>
+            <p id="headCycle">2-week repeating rota • Created by Lucian</p>
         </div>
         <div class="header-actions">
             <button class="icon-btn" onclick="openLeave()" title="Leave Tracker">🌴</button>
@@ -203,8 +202,7 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
 <input type="date" id="setAnchorDate">
 <label>Was that Monday in Week 1 or Week 2?</label>
 <select id="setAnchorWeek"><option value="1">Week 1</option><option value="2">Week 2</option></select>
-<!-- Add this new button -->
-<button style="width: 100%; margin-bottom: 10px; background: transparent; border: 1px solid var(--line); color: var(--muted);" onclick="openTerms()">Read Terms & Conditions</button>
+<button style="width: 100%; margin-top: 10px; margin-bottom: 10px; background: transparent; border: 1px solid var(--line); color: var(--muted);" onclick="openTerms()">Read Terms & Conditions</button>
 <div class="actions"><button onclick="closeModal('settingsModal')">Cancel</button><button class="blue" onclick="saveSettings()">Save Settings</button></div>
 </div></div>
 
@@ -279,6 +277,8 @@ window.resetPassword = () => {
         .catch(err => showError(err.message));
 };
 
+window.openTerms = () => document.getElementById("termsModal").classList.add("show");
+
 onAuthStateChanged(auth, async (user) => {
     if (user) { currentUser = user; document.getElementById("authScreen").style.display = "none"; document.getElementById("mainApp").style.display = "block"; await loadCloudData(); render(); } 
     else { currentUser = null; document.getElementById("authScreen").style.display = "block"; document.getElementById("mainApp").style.display = "none"; }
@@ -313,7 +313,7 @@ function permanent(d){
 function render(){
  let cycleWeek = Math.floor(diff(iso(new Date()), settings.anchorDate)/7);
  let cycle = (parseInt(settings.anchorWeek) === 1 ? cycleWeek : cycleWeek + 1) % 2; if(cycle < 0) cycle += 2;
- document.getElementById("headCycle").textContent = `Current Cycle: Week ${cycle === 0 ? 1 : 2}`;
+ document.getElementById("headCycle").textContent = `Week ${cycle === 0 ? 1 : 2} Rota • Lucian`;
  
  let y=view.getFullYear(), m=view.getMonth(), pStart = new Date(y, m-1, 26), pEnd = new Date(y, m, 25);
  let start = (pStart.getDay()+6)%7, days = Math.round((pEnd - pStart)/86400000) + 1;
@@ -486,8 +486,6 @@ window.openSettings = () => {
  document.getElementById("settingsModal").classList.add("show");
 };
 
-window.openTerms = () => document.getElementById("termsModal").classList.add("show");
-    
 window.saveSettings = async () => {
  settings.rate = document.getElementById("setRate").value; 
  settings.alAllowance = document.getElementById("setAlAllowance").value;
