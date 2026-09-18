@@ -52,7 +52,7 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
 <!-- Authentication Screen -->
 <div id="authScreen" class="auth-container">
     <h2>Welcome to My Rota</h2>
-    <p style="font-size:13px; color:gray; margin-bottom: 15px;">🔒 Secure Cloud Rota & Payroll Management. Please sign in or register.</p>
+    <p style="font-size:13px; color:gray; margin-bottom: 15px;">🔒 Secure Cloud Rota & Payroll Management by Pradeep Khadka (PK).</p>
     <div id="errorMsg"></div>
     <input type="email" id="email" placeholder="Email Address">
     <input type="password" id="password" placeholder="Password">
@@ -63,7 +63,7 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
     <a href="#" onclick="resetPassword()" style="display:block; margin-top:12px; font-size:12px; color:var(--extra); text-decoration:none; font-weight:bold;">Forgot Password?</a>
     
     <div style="margin-top: 15px; font-size: 11px; color: var(--muted); line-height: 1.4; border-top: 1px solid var(--line); padding-top: 10px;">
-        By registering, you acknowledge our <a href="#" onclick="openTerms()" style="color: var(--extra); text-decoration: none; font-weight: bold;">Terms & Conditions</a>. Use at your own risk.
+        By registering, you acknowledge our <a href="#" onclick="openTerms()" style="color: var(--extra); text-decoration: none; font-weight: bold;">Terms & Conditions</a>. App created by Pradeep Khadka (PK).
     </div>
 </div>
 
@@ -72,7 +72,7 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
     <header>
         <div class="header-text">
             <h1>My Rota</h1>
-            <p id="headCycle">2-week repeating rota • Created by Pradeep Khadka (PK)</p>
+            <p id="headCycle">Loading Rota...</p>
         </div>
         <div class="header-actions">
             <button class="icon-btn" onclick="openLeave()" title="Leave Tracker">🌴</button>
@@ -210,9 +210,10 @@ input, select{width:100%;padding:12px;border:1px solid var(--line);border-radius
 <div class="modal" id="termsModal"><div class="sheet">
 <h2>Terms & Conditions</h2>
 <div style="font-size: 12px; color: var(--muted); max-height: 50vh; overflow-y: auto; text-align: left; margin-bottom: 15px; line-height: 1.5;">
-    <b>1. Disclaimer of Accuracy</b><br>This app is a personal tracking tool, not professional payroll software. Always verify official payslips.<br><br>
+    <b>Developer & Copyright:</b> Pradeep Khadka (PK)<br><br>
+    <b>1. Disclaimer of Accuracy</b><br>This app is a personal tracking tool built by Pradeep Khadka (PK), not professional payroll software. Always verify official payslips.<br><br>
     <b>2. Limitation of Liability</b><br>The developer is not liable for indirect damages, lost wages, or data loss. Use at your own risk.<br><br>
-    <b>3. Intellectual Property</b><br>All code and design are the developer's property. Do not copy for commercial gain.<br><br>
+    <b>3. Intellectual Property</b><br>All code, design, and architecture are the exclusive property of Pradeep Khadka (PK). Do not copy for commercial gain.<br><br>
     <b>4. Acceptable Use</b><br>Do not attempt to hack, exploit, or disrupt the database or hosting.<br><br>
     <b>5. Privacy</b><br>Data is stored securely via Google Firebase. You are responsible for keeping your password safe.
 </div>
@@ -313,7 +314,9 @@ function permanent(d){
 function render(){
  let cycleWeek = Math.floor(diff(iso(new Date()), settings.anchorDate)/7);
  let cycle = (parseInt(settings.anchorWeek) === 1 ? cycleWeek : cycleWeek + 1) % 2; if(cycle < 0) cycle += 2;
- document.getElementById("headCycle").textContent = `Week ${cycle === 0 ? 1 : 2} Rota • Lucian`;
+ 
+ // Permanently display your name and initials here for anyone who opens the app!
+ document.getElementById("headCycle").textContent = `Week ${cycle === 0 ? 1 : 2} Rota • By Pradeep Khadka (PK)`;
  
  let y=view.getFullYear(), m=view.getMonth(), pStart = new Date(y, m-1, 26), pEnd = new Date(y, m, 25);
  let start = (pStart.getDay()+6)%7, days = Math.round((pEnd - pStart)/86400000) + 1;
@@ -500,15 +503,12 @@ window.saveSettings = async () => {
 
 if (location.protocol === "https:" && "serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").then((reg) => {
-        // Automatically check for updates every time the app opens
         reg.update();
-        
-        // If a new service worker is waiting, force it to take over immediately
         reg.onupdatefound = () => {
             let installingWorker = reg.installing;
             installingWorker.onstatechange = () => {
                 if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    window.location.reload(); // Refresh the page to load the fresh code
+                    window.location.reload();
                 }
             };
         };
