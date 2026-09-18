@@ -498,7 +498,22 @@ window.saveSettings = async () => {
  window.closeModal('settingsModal'); render(); saveToCloud();
 };
 
-if(location.protocol==="https:"&&"serviceWorker"in navigator) navigator.serviceWorker.register("sw.js");
+if (location.protocol === "https:" && "serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").then((reg) => {
+        // Automatically check for updates every time the app opens
+        reg.update();
+        
+        // If a new service worker is waiting, force it to take over immediately
+        reg.onupdatefound = () => {
+            let installingWorker = reg.installing;
+            installingWorker.onstatechange = () => {
+                if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    window.location.reload(); // Refresh the page to load the fresh code
+                }
+            };
+        };
+    });
+}
 </script>
 </body>
 </html>
