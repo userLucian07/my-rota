@@ -1,10 +1,15 @@
 {
-  "name":"My Rota",
-  "short_name":"My Rota",
-  "start_url":"./",
-  "scope":"./",
-  "display":"standalone",
-  "background_color":"#f3f4f6",
-  "theme_color":"#111827",
-  "description":"Personal two-week shift rota"
+  "name": "My Rota",
+  "short_name": "My Rota",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
