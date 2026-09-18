@@ -1,7 +1,8 @@
 {
-  "name": "My Rota",
+  "name": "My Rota - Pradeep Khadka",
   "short_name": "My Rota",
-  "start_url": "/",
+  "start_url": "/my-rota/",
+  "scope": "/my-rota/",
   "display": "standalone",
   "background_color": "#111827",
   "theme_color": "#111827",
