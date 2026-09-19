@@ -316,7 +316,7 @@ function render(){
  let cycle = (parseInt(settings.anchorWeek) === 1 ? cycleWeek : cycleWeek + 1) % 2; if(cycle < 0) cycle += 2;
  
  // Permanently display your name and initials here for anyone who opens the app!
- document.getElementById("headCycle").textContent = `Week ${cycle === 0 ? 1 : 2} Rota • By Pradeep Khadka (PK)`;
+ document.getElementById("headCycle").textContent = `Week ${cycle === 0 ? 1 : 2} Rota •`;
  
  let y=view.getFullYear(), m=view.getMonth(), pStart = new Date(y, m-1, 26), pEnd = new Date(y, m, 25);
  let start = (pStart.getDay()+6)%7, days = Math.round((pEnd - pStart)/86400000) + 1;
