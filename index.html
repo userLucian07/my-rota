@@ -239,7 +239,15 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-let currentUser = null, view = new Date(), extras = {}, selected = null;
+let currentUser = null, extras = {}, selected = null;
+
+// Smart View: If today is the 26th or later, default the view to next month's pay period
+let now = new Date();
+let initialView = new Date(now.getFullYear(), now.getMonth(), 1);
+if (now.getDate() >= 26) {
+    initialView = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+}
+let view = initialView;
 const defaultSettings = { rate: 13, alAllowance: 210, alMonth: 0, anchorDate: "2026-09-07", anchorWeek: 2, w1: [0,5,6], w2: [0,2,4] };
 let settings = { ...defaultSettings };
 let currentLeaveYear = new Date().getFullYear();
